@@ -34,7 +34,7 @@ FeedIngest は現在 **AGPL-3.0-or-later 単独**で提供しています。
 
 「本ソフトウェア」とは VehicleVision.PleasanterTools.FeedIngest を、
 「貢献」とはあなたが本ソフトウェアへ提出する著作物（コード・文書・図・設定を含む）を指します。
-「当社」とは株式会社ビークルビジョンを指します。
+「当社」とは株式会社ピー・エム・シー ITソリューション事業部を指します。
 
 ### 1.1 著作権の許諾
 
@@ -94,6 +94,9 @@ FeedIngest は現在 **AGPL-3.0-or-later 単独**で提供しています。
 [CONTRIBUTING.md](CONTRIBUTING.md) の「CLA へ署名する」を参照してください。
 
 参照元: [Template の CLA][template-cla]（2026-10-22 参照）。
-第 1・2 節の条文は対象ソフトウェア名以外を変更していません。
+許諾先は株式会社ピー・エム・シー ITソリューション事業部（ユーザーの指示 2026-10-22）です。
+第 1・2 節の権利義務の文言は [Questionnaire の CLA][questionnaire-cla] と同じです
+（対象ソフトウェア名・提供ライセンスの位置づけと書式を除く。2026-10-22 比較）。
 
 [template-cla]: https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Template/blob/60ad8ae1913e6ff663d2df1a3acd6143bd3fe3f7/CLA.md
+[questionnaire-cla]: https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Questionnaire/blob/33d77eb7247340fd682c08c78845e0e29b94df74/CLA.md
