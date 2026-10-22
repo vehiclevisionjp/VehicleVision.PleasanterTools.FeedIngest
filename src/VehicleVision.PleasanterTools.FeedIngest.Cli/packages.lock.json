@@ -4,6 +4,12 @@
     "net10.0": {
       "vehiclevision.pleasantertools.feedingest.core": {
         "type": "Project"
+      },
+      "vehiclevision.pleasantertools.feedingest.pleasanter": {
+        "type": "Project",
+        "dependencies": {
+          "VehicleVision.PleasanterTools.FeedIngest.Core": "[0.1.0, )"
+        }
       }
     }
   }

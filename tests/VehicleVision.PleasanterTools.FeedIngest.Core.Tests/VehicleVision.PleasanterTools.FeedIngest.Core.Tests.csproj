@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <None Include="..\..\_documents\対応づけ設定.md" Link="mapping.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

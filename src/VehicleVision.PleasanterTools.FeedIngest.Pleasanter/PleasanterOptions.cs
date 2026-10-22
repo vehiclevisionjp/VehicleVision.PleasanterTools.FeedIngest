@@ -1,4 +1,6 @@
-namespace VehicleVision.PleasanterTools.FeedIngest.Core;
+using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
+
+namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
 
 /// <summary>Pleasanter の接続設定を呼び出し時に解決する。</summary>
 public interface IPleasanterOptionsProvider
@@ -32,16 +34,36 @@ public sealed class PleasanterOptions
     public TimeSpan Timeout { get; init; } = DefaultTimeout;
 
     /// <summary>環境変数 <c>PLEASANTER_BASE_URL</c> / <c>PLEASANTER_API_KEY</c> から作る。</summary>
-    public static PleasanterOptions FromEnvironment() => new()
+    public static PleasanterOptions FromEnvironment(Func<string, string?>? environment = null)
     {
-        BaseUrl = Required("PLEASANTER_BASE_URL"),
-        ApiKey = Required("PLEASANTER_API_KEY"),
-    };
+        environment ??= Environment.GetEnvironmentVariable;
+        var legacy = new[] { "PLEASANTER_BASE_URL", "PLEASANTER_API_KEY", "PLEASANTER_API_KEY_FILE" };
+        var current = new[]
+        {
+            "FEEDINGEST_PLEASANTER_BASE_URL", "FEEDINGEST_PLEASANTER_API_KEY",
+            "FEEDINGEST_PLEASANTER_API_KEY_FILE",
+        };
+        if (legacy.Any(name => environment(name) is not null)
+            && current.Any(name => environment(name) is not null))
+        {
+            throw new InvalidOperationException("PLEASANTER_* と FEEDINGEST_PLEASANTER_* は併用できません。");
+        }
 
-    private static string Required(string name) =>
-        Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
-            ? value
-            : throw new InvalidOperationException($"環境変数 {name} が設定されていません。");
+        var prefix = current.Any(name => environment(name) is not null) ? "FEEDINGEST_PLEASANTER_" : "PLEASANTER_";
+        var url = environment(prefix + "BASE_URL");
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps || uri.UserInfo.Length != 0
+            || uri.Fragment.Length != 0 || uri.Query.Length != 0)
+        {
+            throw new InvalidOperationException($"環境変数 {prefix}BASE_URL は資格情報を含まない HTTPS URL が必要です。");
+        }
+
+        return new PleasanterOptions
+        {
+            BaseUrl = url!,
+            ApiKey = new SecretReference(prefix + "API_KEY").Resolve(environment),
+        };
+    }
 }
 
 /// <summary>固定した Pleasanter 接続設定を返す。</summary>

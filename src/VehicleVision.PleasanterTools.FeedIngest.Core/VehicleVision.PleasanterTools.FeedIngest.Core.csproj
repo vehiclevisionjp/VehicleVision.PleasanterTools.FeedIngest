@@ -1,7 +1,3 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="VehicleVision.PleasanterTools.FeedIngest.Core.Tests" />
-  </ItemGroup>
-
 </Project>

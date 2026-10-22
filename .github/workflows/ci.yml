@@ -34,6 +34,10 @@ jobs:
       - run: npm run lint:md
       - name: ロック済み依存を復元する
         run: dotnet restore --locked-mode
+      - name: 依存ライセンスと表示を検査する
+        run: |
+          bash scripts/license-check.sh
+          bash scripts/notice-check.sh
       - name: ビルドする
         run: dotnet build --no-restore -c Release
       - name: テストする
