@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace VehicleVision.PleasanterTools.FeedIngest.Core.Tests;
+namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests;
 
 public sealed class PleasanterApiClientTests
 {
@@ -49,6 +49,22 @@ public sealed class PleasanterApiClientTests
         var response = await client.GetAsync(1, cancellationToken: CancellationToken.None);
 
         Assert.Equal(PleasanterErrorKind.Unknown, response.ErrorKind);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.Unauthorized, false)]
+    [InlineData(HttpStatusCode.NotFound, false)]
+    public async Task check互換の疎通確認は既存パスと秘密配置を維持する(HttpStatusCode status, bool expected)
+    {
+        var handler = new StubHandler(status);
+        using var http = new HttpClient(handler);
+        var client = new PleasanterApiClient(http, Options);
+        Assert.Equal(expected, await client.CheckConnectionAsync());
+        Assert.Equal("https://example.invalid/api/users/Get", handler.RequestUri);
+        var body = JsonNode.Parse(handler.RequestBody!)!;
+        Assert.Equal("secret-key", (string?)body["ApiKey"]);
+        Assert.Equal(1.1m, (decimal?)body["ApiVersion"]);
     }
 
     private sealed class StubHandler(

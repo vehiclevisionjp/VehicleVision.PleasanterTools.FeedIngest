@@ -2,8 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Core/VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
     <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Cli/VehicleVision.PleasanterTools.FeedIngest.Cli.csproj" />
+    <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Feeds/VehicleVision.PleasanterTools.FeedIngest.Feeds.csproj" />
+    <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Pleasanter/VehicleVision.PleasanterTools.FeedIngest.Pleasanter.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VehicleVision.PleasanterTools.FeedIngest.Core.Tests/VehicleVision.PleasanterTools.FeedIngest.Core.Tests.csproj" />
+    <Project Path="tests/VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests/VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests.csproj" />
   </Folder>
 </Solution>

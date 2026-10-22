@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Core\VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
+    <InternalsVisibleTo Include="VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests" />
+  </ItemGroup>
+</Project>

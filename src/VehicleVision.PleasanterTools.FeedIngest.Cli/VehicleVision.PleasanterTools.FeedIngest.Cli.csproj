@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Core\VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
+    <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Pleasanter\VehicleVision.PleasanterTools.FeedIngest.Pleasanter.csproj" />
   </ItemGroup>
 
 </Project>

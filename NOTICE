@@ -2,7 +2,7 @@ VehicleVision.PleasanterTools.FeedIngest
 SPDX-License-Identifier: AGPL-3.0-or-later
 
 RSS / Atom の取得と Pleasanter への作成・更新を目的とする。
-2026-10-22 現在は初期化・設計段階。取り込み機能と追加の依存 OSS は未導入。
+2026-10-22 現在は基盤実装段階。取り込み機能は未実装。
 FeedIngest は AGPL-3.0-or-later 単独で提供し、商用とのデュアル提供は行わない。
 
 開発運用と Actions の構成、および指示同期・参照更新スクリプトは次を参考にしています。
@@ -31,8 +31,55 @@ https://github.com/xunit/visualstudio.xunit/blob/main/License.txt
 coverlet.collector — MIT
 https://github.com/coverlet-coverage/coverlet/blob/master/LICENSE
 
-推移的依存と実際の版は各プロジェクトの packages.lock.json に記録する。
+直接・推移依存の全閉包（net10.0、参照日: 2026-10-22）:
+System.ServiceModel.Syndication 10.0.13 / MIT
+coverlet.collector 10.1.0 / MIT
+Microsoft.CodeCoverage 18.11.0 / MIT
+Microsoft.NET.Test.Sdk 18.11.0 / MIT
+Microsoft.TestPlatform.ObjectModel 18.11.0 / MIT
+Microsoft.TestPlatform.TestHost 18.11.0 / MIT
+xunit 2.9.3 / Apache-2.0
+xunit.abstractions 2.0.3 / Apache-2.0
+xunit.analyzers 1.18.0 / Apache-2.0
+xunit.assert 2.9.3 / Apache-2.0
+xunit.core 2.9.3 / Apache-2.0
+xunit.extensibility.core 2.9.3 / Apache-2.0
+xunit.extensibility.execution 2.9.3 / Apache-2.0
+xunit.runner.visualstudio 4.0.1 / Apache-2.0
+
+Syndication は Feeds の採用依存。net10.0 向けの追加推移依存はない。
+現在の check CLI は Feeds を参照せず、Syndication を配布しない。
+テスト用依存も配布しない。実際の解決版とハッシュは各 packages.lock.json に記録する。
+一次情報と旧 xunit.abstractions の確認根拠は _documents/設計の参照情報.md を参照。
+
+System.ServiceModel.Syndication
+Copyright (c) .NET Foundation and Contributors
+© Microsoft Corporation. All rights reserved.
+https://github.com/dotnet/runtime/blob/v10.0.13/LICENSE.TXT
+
+The MIT License (MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 開発用（実行環境へ配布しない）:
+markdownlint 0.42.0 / MIT
+katex 0.19.0 / MIT
 - markdownlint — MIT: https://github.com/DavidAnson/markdownlint/blob/main/LICENSE
 - KaTeX（markdownlint の推移的依存）— MIT: https://github.com/KaTeX/KaTeX/blob/main/LICENSE
+その他の npm 推移依存も package-lock.json 上ではすべて MIT。

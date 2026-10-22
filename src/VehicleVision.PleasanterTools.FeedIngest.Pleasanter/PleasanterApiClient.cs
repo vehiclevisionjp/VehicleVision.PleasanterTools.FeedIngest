@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace VehicleVision.PleasanterTools.FeedIngest.Core;
+namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
 
 /// <summary>Pleasanter の応答をどう扱うか。</summary>
 /// <remarks>分類を誤ると、直らないものを再送し続けるか、直るものを捨てる。</remarks>
@@ -142,7 +142,7 @@ public sealed class PleasanterApiClient(
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {
             // 送れたのか届いたのか分からない。照合してから判断する
             return new PleasanterResponse(PleasanterErrorKind.Unknown);

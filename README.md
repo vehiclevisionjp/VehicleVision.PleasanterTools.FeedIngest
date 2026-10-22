@@ -5,9 +5,9 @@ RSS / Atom のフィードを取得し、記事を Pleasanter の列へ対応づ
 
 ## 現在の状態
 
-**初期化・設計段階です。フィードの取得・解析・対応づけ・レコードの作成／更新は未実装です。**
-現在あるのは、テンプレート由来の最小 API クライアントと接続確認 CLI のみです。
-設計メモのレビュー後に実装へ進みます。
+**基盤の実装段階です。フィードの取得・解析・対応づけ・取り込み実行は未実装です。**
+正規化モデル・JSON設定の検証・秘密参照、最小 API クライアントと接続確認 CLI があります。
+設定ファイルを使った取り込みコマンドはまだ提供していません。
 
 初回実装では RSS 2.0 / Atom 1.0 を対象にします。
 管理画面・スケジューラ・Docker 化は次の段階であり、現時点では提供しません。
@@ -17,7 +17,12 @@ RSS / Atom のフィードを取得し、記事を Pleasanter の列へ対応づ
 
 現在の CLI は、接続先の環境変数 `PLEASANTER_BASE_URL` と `PLEASANTER_API_KEY` を読みます。
 API キーは秘密管理基盤などからプロセス環境へ設定し、コマンド履歴・設定ファイルへ直書きしないでください。
-現在の CLI は `_FILE` に未対応です。
+`PLEASANTER_API_KEY_FILE` で秘密ファイルの絶対パスも指定できます。
+ファイルはUTF-8、最大64 KiBで、末尾の改行1組だけを除去します。
+環境変数の値と `_FILE` の併用、空値、改行を含む値はエラーです。
+接続先はHTTPSのみで、リダイレクトには追従しません。
+`FEEDINGEST_PLEASANTER_BASE_URL`／`FEEDINGEST_PLEASANTER_API_KEY`（または `_FILE`）も使えますが、
+旧 `PLEASANTER_*` と混在すると起動エラーになります。
 
 ```powershell
 dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
