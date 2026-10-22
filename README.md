@@ -38,3 +38,5 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
 商用ライセンスとのデュアル提供は行いません。
 依存のライセンスは [NOTICE](NOTICE)、貢献と参照ソースの扱いは
 [ライセンス](_documents/ライセンス.md) に記載しています。
+貢献を取り込む前に CLA への署名が必要です。
+手続きと草案の扱いは [貢献のしかた](CONTRIBUTING.md) と [CLA](CLA.md) を参照してください。
