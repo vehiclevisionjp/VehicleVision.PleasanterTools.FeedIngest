@@ -1,4 +1,5 @@
 VehicleVision.PleasanterTools.FeedIngest
+Copyright (C) PMC Co., Ltd. IT Solution Div.
 SPDX-License-Identifier: AGPL-3.0-or-later
 
 RSS / Atom の取得と Pleasanter への作成・更新を目的とする。

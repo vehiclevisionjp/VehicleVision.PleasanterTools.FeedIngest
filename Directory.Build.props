@@ -24,6 +24,9 @@
 
   <!-- AGPL-3.0-or-later 単独で提供する。_documents/ライセンス.md を参照する。 -->
   <PropertyGroup>
+    <Company>PMC Co., Ltd. IT Solution Div.</Company>
+    <Authors>PMC Co., Ltd. IT Solution Div.</Authors>
+    <Copyright>Copyright (C) PMC Co., Ltd. IT Solution Div.</Copyright>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.FeedIngest</RepositoryUrl>
   </PropertyGroup>
