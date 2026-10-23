@@ -1,0 +1,45 @@
+name: CLA への署名
+description: 貢献の前に、コントリビューターライセンス同意書へ署名します
+title: "CLA への署名: "
+labels:
+  - "2-type:chore"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        [`CLA.md`](../blob/develop/CLA.md) を読んでから記入してください。
+        会社の業務として貢献する場合は、法人用の署名と勤務先の承認も要ります。
+        秘密情報や非公開の契約書をこの Issue に記入しないでください。
+  - type: input
+    id: login
+    attributes:
+      label: GitHub のログイン名
+      placeholder: your-login
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: どちらとして署名しますか
+      options:
+        - 個人として
+        - 法人として（法人用も併せて署名する）
+    validations:
+      required: true
+  - type: input
+    id: company
+    attributes:
+      label: 法人名（法人として署名する場合）
+    validations:
+      required: false
+  - type: checkboxes
+    id: agree
+    attributes:
+      label: 同意
+      options:
+        - label: CLA.md を読み、その内容に同意します
+          required: true
+        - label: 貢献を許諾する権利を持っています（勤務先など第三者の権利が及ぶ場合、必要な許可を得ています）
+          required: true
+        - label: 貢献に他者の権利を侵害するものが含まれていないと、知る限りにおいて認識しています
+          required: true
