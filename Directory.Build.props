@@ -22,12 +22,12 @@
     <VersionPrefix>0.1.0</VersionPrefix>
   </PropertyGroup>
 
-  <!-- AGPL-3.0-or-later 単独で提供する。_documents/ライセンス.md を参照する。 -->
+  <!-- デュアルライセンス（AGPL-3.0-or-later OR 商用）。LICENSING.md と _documents/ライセンス.md を参照する。
+       NuGet の PackageLicenseExpression は LicenseRef-* を含む式を受け付けないため、式は持たない -->
   <PropertyGroup>
     <Company>PMC Co., Ltd. IT Solution Div.</Company>
     <Authors>PMC Co., Ltd. IT Solution Div.</Authors>
     <Copyright>Copyright (C) PMC Co., Ltd. IT Solution Div.</Copyright>
-    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.FeedIngest</RepositoryUrl>
   </PropertyGroup>
 </Project>

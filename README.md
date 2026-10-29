@@ -34,8 +34,13 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
 
 ## ライセンス
 
-**AGPL-3.0-or-later 単独**で提供します（[LICENSE](LICENSE)）。
-商用ライセンスとのデュアル提供は行いません。
+**デュアルライセンス**で提供します（草案。法務の確認前）。詳細は [ライセンスについて](LICENSING.md) を参照してください。
+
+| | ライセンス | 想定する利用 |
+| --- | --- | --- |
+| A | [GNU AGPL v3 以降](LICENSE) | オープンソースとして利用・改変・再配布する場合 |
+| B | [株式会社ピー・エム・シー ITソリューション事業部の商用ライセンス](LICENSE-COMMERCIAL.md) | 法人が AGPL の義務を負わずに利用したい場合（個別契約） |
+
 依存のライセンスは [NOTICE](NOTICE)、貢献と参照ソースの扱いは
 [ライセンス](_documents/ライセンス.md) に記載しています。
 貢献を取り込む前に CLA への署名が必要です。
