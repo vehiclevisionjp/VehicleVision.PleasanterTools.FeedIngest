@@ -9,6 +9,7 @@ body:
       value: |
         [`CLA.md`](../blob/develop/CLA.md) を読んでから記入してください。
         会社の業務として貢献する場合は、法人用の署名と勤務先の承認も要ります。
+        **法人として署名する場合は、この Issue に加えて、署名者の権限を確認できるメールを `group.development+cla@vehiclevision.jp` へ送ってください**（詳しくは CONTRIBUTING.md の「CLA へ署名する」）。
         秘密情報や非公開の契約書をこの Issue に記入しないでください。
   - type: input
     id: login
