@@ -34,7 +34,7 @@ Issue → `develop` から作業ブランチ → 実装と検証 → push → Dr
 
 共通規約の編集元はこのファイル。`scripts/sync-agents.sh` で AGENTS.md を再生成し、`--check` で確認する。Claude のローカル許可や秘密は追跡しない。
 
-Claude や Codex が外部記憶を必要とするときは、本リポジトリ名に `.ClaudeMemory` を付けた Internal リポジトリ（例: `<リポジトリ名>.ClaudeMemory`）を作って管理する。本体へ記憶ファイルを置かない。正式な規約は常にこのファイルへ残し、記憶と食い違ったら記憶側を直す。規約を変えたら記憶に古い記述が無いか確認する。
+Claude や Codex が外部記憶を必要とするときは、個別のリポジトリを作らず、Internal の `VehicleVision.PleasanterTools.ClaudeMemory` に `FeedIngest/` フォルダを作って管理する。本体へ記憶ファイルを置かない。正式な規約は常にこのファイルへ残し、記憶と食い違ったら記憶側を直す。規約を変えたら記憶に古い記述が無いか確認する。
 
 Pleasanter の挙動を確かめる前に、`bash scripts/sync-reference.sh` で
 `_reference/Implem.Pleasanter` を上流の `main` の先頭へ更新し、実ソースと実機で確認する。
