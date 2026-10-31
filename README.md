@@ -34,7 +34,7 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
 
 ## ライセンス
 
-**デュアルライセンス**で提供します（草案。法務の確認前）。詳細は [ライセンスについて](LICENSING.md) を参照してください。
+**デュアルライセンス**で提供します。詳細は [ライセンスについて](LICENSING.md) を参照してください。
 
 | | ライセンス | 想定する利用 |
 | --- | --- | --- |
