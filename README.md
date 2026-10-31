@@ -39,7 +39,7 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
 | | ライセンス | 想定する利用 |
 | --- | --- | --- |
 | A | [GNU AGPL v3 以降](LICENSE) | オープンソースとして利用・改変・再配布する場合 |
-| B | [株式会社ピー・エム・シー ITソリューション事業部の商用ライセンス](LICENSE-COMMERCIAL.md) | 法人が AGPL の義務を負わずに利用したい場合（個別契約） |
+| B | [株式会社ピー・エム・シー ITソリューション事業部の商用ライセンス](LICENSE-COMMERCIAL.md) | AGPL の義務を負わずに利用したい場合（個別契約） |
 
 依存のライセンスは [NOTICE](NOTICE)、貢献と参照ソースの扱いは
 [ライセンス](_documents/ライセンス.md) に記載しています。
