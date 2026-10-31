@@ -11,10 +11,10 @@ Copyright (C) PMC Co., Ltd. IT Solution Div.
 
 ## 概要
 
-商用ライセンスは、**法人**が **GNU AGPL v3 の義務を負わずに**本ソフトウェアを利用するための
+商用ライセンスは、**GNU AGPL v3 の義務を負わずに**本ソフトウェアを利用するための
 選択肢です。次を想定しています。
 
-- 改変版のソースコードを公開せずに利用する
+- 改変版のソースコードを公開せずに利用する（ネットワーク経由で提供する場合を含む）
 - proprietary な製品・システムへ組み込む
 - 保守・サポート・SLA を契約に含める
 
@@ -32,21 +32,18 @@ Copyright (C) PMC Co., Ltd. IT Solution Div.
 本リポジトリのうち、**当社が著作権を持つ部分**が対象です。次は対象外です。
 
 - サードパーティの OSS と部品（[`NOTICE`](NOTICE) 参照）。各ライセンスに従ってください
+  <!-- license:begin sni-scope=off -->
+  <!-- license:end sni-scope -->
+  <!-- license:begin reference-scope=on -->
 - [`_reference/`](_reference/README.md) 配下（Pleasanter 本体。AGPL v3）。
   **参照専用であり、本ソフトウェアの一部ではありません**
+  <!-- license:end reference-scope -->
 
-## 共通部品 Core との関係
+<!-- license:begin core-terms=off -->
+<!-- license:end core-terms -->
 
-FeedIngest は、当社の共通部品 `VehicleVision.PleasanterTools.Core.Data`（以下「Core」）を利用する設計です。
-Core は AGPL-3.0-or-later と商用ライセンスのデュアルライセンスで、著作権者は当社です
-（[`LICENSING.md`](LICENSING.md) の依存の節を参照）。
-**本ソフトウェアの商用ライセンスを選ぶ利用者は、Core の部分についても、Core の商用ライセンスが必要になります。**
-本書の商用ライセンスは、Core の商用ライセンスを含むものではありません。
-
-Core の商用ライセンスと本ソフトウェアの商用ライセンスを
-まとめて契約するか別々に契約するか、その条件は決めていません。
-
-現時点では Core を依存に追加していません。
+<!-- license:begin sni-terms=off -->
+<!-- license:end sni-terms -->
 
 ## お問い合わせ
 

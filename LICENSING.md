@@ -1,7 +1,9 @@
 # ライセンスについて（デュアルライセンス）
 
-> FeedIngest は未リリースです。
+<!-- license:begin release=unreleased -->
+> 本ソフトウェアは未リリースです。
 > 最初のリリースは、この提供条件（デュアルライセンス）で出します。
+<!-- license:end release -->
 
 対象ソフトウェアは **VehicleVision.PleasanterTools.FeedIngest**
 
@@ -14,7 +16,7 @@ Copyright (C) PMC Co., Ltd. IT Solution Div.
 | | ライセンス | 全文 | 想定する利用 |
 | --- | --- | --- | --- |
 | A | **GNU AGPL v3 以降**（AGPL-3.0-or-later） | [`LICENSE`](LICENSE) | オープンソースとして利用・改変・再配布する場合 |
-| B | **株式会社ピー・エム・シー ITソリューション事業部の商用ライセンス** | [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) | 法人が、AGPL の義務を負わずに利用したい場合（個別契約） |
+| B | **株式会社ピー・エム・シー ITソリューション事業部の商用ライセンス** | [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) | AGPL の義務を負わずに利用したい場合（個別契約） |
 
 SPDX 表記： `AGPL-3.0-or-later OR LicenseRef-PMC-Commercial`
 
@@ -29,15 +31,18 @@ SPDX 表記： `AGPL-3.0-or-later OR LicenseRef-PMC-Commercial`
   その利用者に対して改変版のソースコードを提供する義務**が生じます
 - 本ソフトウェアと結合した著作物を配布する場合、その全体を AGPL で提供する必要があります
 
+<!-- license:begin usage=console -->
 本ソフトウェアはコンソールアプリで、利用者が自分の環境で実行します。
-ただし、組織の内部での利用や受託での提供など、義務の有無が分かりにくい場面は確認してください。
+<!-- license:end usage -->
+
+組織の内部での利用や受託での提供など、義務の有無が分かりにくい場面は確認してください。
 
 ### B. 商用ライセンスを選ぶ場合
 
-**法人**が、AGPL の義務（ソースコード開示・コピーレフト）を負わずに利用できます。
+AGPL の義務（ソースコード開示・コピーレフト）を負わずに利用できます。
 条件は個別契約で定めます。次のような場合はこちらを検討してください。
 
-- 改変版のソースコードを公開したくない
+- 改変版のソースコードを公開したくない（ネットワーク経由で提供する場合を含む）
 - 自社の proprietary な製品・システムに組み込みたい
 - AGPL の義務範囲について社内の法務判断が難しい
 - 保守・サポート・SLA を契約に含めたい
@@ -48,53 +53,61 @@ SPDX 表記： `AGPL-3.0-or-later OR LicenseRef-PMC-Commercial`
 ## Pleasanter との関係（デュアルライセンスの前提）
 
 本ソフトウェアは Pleasanter（株式会社インプリム, AGPL v3）の
-**別アプリケーション**です。
+**独立した別アプリケーション**です。
 
-- Pleasanter の **標準 Web API を HTTPS で呼び出して**レコードを作成・更新します。
-  本体のプログラムやアセンブリは参照・同梱しません
-- 本体のソースコードは、**コピー・流用・リンク・プロジェクト参照をしない**規約です
-  （[`.github/copilot-instructions.md`](.github/copilot-instructions.md) の規約 6、
-  [`_reference/README.md`](_reference/README.md)）
-- [`_reference/`](_reference/README.md) に取得する本体は **AI の事実確認専用の参照ソース**です。
-  Git で追跡せず、ビルド対象にも配布物にも含めません
-  （検査: `scripts/reference-isolation-check.sh`、`scripts/package.ps1`）
-- FeedIngest 自身の DB は、本体の DB とは別の専用 DB です
+- 本体のソースコードを **複製・改変・リンク・プロジェクト参照していません**。Pleasanter のアセンブリも参照しません
+- Pleasanter の派生著作物ではありません
+  <!-- license:begin connection=api-only -->
+- Pleasanter とは **標準 Web API 越しにのみ通信**します。DB へ直接接続しません
+  <!-- license:end connection -->
+  <!-- license:begin reference=on -->
+- [`_reference/Implem.Pleasanter`](_reference/README.md) は**事実確認のための参照専用**で、
+  ビルド対象にも配布物にも含めません
+  <!-- license:end reference -->
 
+本ソフトウェアは、Pleasanter 本体の AGPL の**汚染を受けておらず、受け入れるつもりもありません。**
 そのため、本ソフトウェアのライセンスは Pleasanter のライセンスに拘束されず、
-**著作権者である株式会社ピー・エム・シー ITソリューション事業部が自由に決定できる**ことを、
-デュアルライセンスの前提にしています。本体のコードを一切含まないことの確認は、
-上の規約と検査の範囲で行っています。
+**著作権者である株式会社ピー・エム・シー ITソリューション事業部が自由に決定できます。
+これがデュアルライセンスを成立させている前提です。**
 
 > **AGPL 側だけを見て「どうせ AGPL なのだから本体を取り込んでもよい」と考えないこと。**
 > Pleasanter の著作権は当社にないため、**取り込んだ瞬間に B（商用ライセンス）を
 > 提供できなくなります。** デュアルの片方が壊れます。
 
+<!-- license:begin pleasanter-note=free -->
+確認の方法と、本ソフトウェアの実装の範囲です。
+
+- 接続先は、資格情報を含まない HTTPS の URL に限ります（`PleasanterOptions`）
+- `scripts/reference-isolation-check.sh`（CI で実行）が、`src`・`tests` の `.cs`・`.csproj` とビルド定義に
+  `Implem.` と `_reference` への参照が無いことを検査します。`_reference/` に取得する本体は Git で追跡せず、
+  配布 ZIP からも除外します（`scripts/package.ps1`）。規約は [`.github/copilot-instructions.md`](.github/copilot-instructions.md) の規約 6 にあります
+- 現時点の実装は、Pleasanter の標準 Web API を呼ぶ最小のクライアントと接続確認だけです。
+  取得状態を保持する DB（`.Data`）は未実装で、設計では FeedIngest 専用の DB とし、Pleasanter の DB とは別にします
+  （[`_documents/アーキテクチャ方針.md`](_documents/アーキテクチャ方針.md)）
+<!-- license:end pleasanter-note -->
+
 ## 依存ソフトウェアについて
 
-本ソフトウェアが利用する OSS は、**寛容ライセンス（MIT / BSD 系 / Apache-2.0）を基本**とし、
-一覧は [`NOTICE`](NOTICE) を参照してください。
+本ソフトウェアが利用する OSS は **寛容ライセンス（MIT / BSD 系 / Apache-2.0）** に
+限定します。一覧は [`NOTICE`](NOTICE) を参照してください。推移的依存と実際の版は `packages.lock.json` にあります。
 
-**コピーレフト系（GPL / AGPL / SSPL 等）の依存が入ると、商用ライセンスでの提供ができなくなります。**
-依存を追加する際は必ずライセンスを確認してください。
-
-### 例外: 当社の共通部品 Core.Data（AGPL／商用のデュアルライセンス）
-
-FeedIngest は、当社の共通部品 `VehicleVision.PleasanterTools.Core.Data`（以下「Core」）を利用する設計です
-（[`_documents/アーキテクチャ方針.md`](_documents/アーキテクチャ方針.md) の U2）。
-Core は寛容ライセンスではなく、**AGPL-3.0-or-later と商用ライセンスのデュアルライセンス**で提供されます。
-著作権者は本ソフトウェアと同じ、株式会社ピー・エム・シー ITソリューション事業部です。
-
-- **A（AGPL）を選ぶ場合**: Core も AGPL で利用します
-- **B（商用）を選ぶ場合**: Core の部分は、Core の商用ライセンスが必要になります
-
-本ソフトウェアの商用ライセンスと Core の商用ライセンスを
-まとめて契約するか、別々に契約するか、条件をどうするかは決めていません。
-Core の条件は [Core の LICENSING.md](https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Core/blob/develop/LICENSING.md) を参照してください。
-
-現時点では、Core はまだ依存に追加していません（`packages.lock.json` に含まれません）。
-追加する作業で、採用版と推移依存のライセンスを再確認します。
+<!-- license:begin deps-note=free -->
+当社の共通部品 Core（`VehicleVision.PleasanterTools.Core.Data`）は、設計上は利用する予定です
+（[`_documents/アーキテクチャ方針.md`](_documents/アーキテクチャ方針.md) の U2）が、
+**現時点では依存に追加していません**（`packages.lock.json` に含まれません）。
+追加する作業で、`core` の節を `on` に切り替え、採用版と推移依存のライセンスを再確認します。
 
 未公開の DotNetClient（LGPL）への依存は**禁止**です。設計の参考にとどめます。
+<!-- license:end deps-note -->
+
+これは意図的な制約です。**コピーレフト系（GPL / AGPL / SSPL 等）の依存が 1 つでも入ると、
+商用ライセンスでの提供ができなくなります。** 依存を追加する際は必ずライセンスを確認してください。
+
+<!-- license:begin sni=off -->
+<!-- license:end sni -->
+
+<!-- license:begin core=off -->
+<!-- license:end core -->
 
 ## 貢献を受け取るとき
 
@@ -105,4 +118,3 @@ Core の条件は [Core の LICENSING.md](https://github.com/vehiclevisionjp/Veh
 後から気付いても、当人全員から同意を集め直すか、該当コードを書き直すしかない。
 
 手続きは [`CLA.md`](CLA.md) と [`CONTRIBUTING.md`](CONTRIBUTING.md) を参照してください。
-依存・参照ソースと法務確認事項は [ライセンス](_documents/ライセンス.md) にあります。
