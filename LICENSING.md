@@ -1,7 +1,6 @@
 # ライセンスについて（デュアルライセンス）
 
-> ⚠️ **これは草案です。法務の確認を受けるまで、正式な提供条件として扱わないでください。**
-> 確認が済んだらこの但し書きを外してください。FeedIngest は未リリースです。
+> FeedIngest は未リリースです。
 > 最初のリリースは、この提供条件（デュアルライセンス）で出します。
 
 対象ソフトウェアは **VehicleVision.PleasanterTools.FeedIngest**
@@ -46,9 +45,6 @@ SPDX 表記： `AGPL-3.0-or-later OR LicenseRef-PMC-Commercial`
 **お問い合わせ：** 株式会社ピー・エム・シー ITソリューション事業部
 （連絡先は [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) を参照）
 
-> **要確認（法務）:** 「法人」に含める範囲（営利・非営利・官公庁・教育機関・個人事業主）と、
-> 商用ライセンスを契約できる相手の範囲は、この草案では確定していません。
-
 ## Pleasanter との関係（デュアルライセンスの前提）
 
 本ソフトウェアは Pleasanter（株式会社インプリム, AGPL v3）の
@@ -91,9 +87,9 @@ Core は寛容ライセンスではなく、**AGPL-3.0-or-later と商用ライ�
 - **A（AGPL）を選ぶ場合**: Core も AGPL で利用します
 - **B（商用）を選ぶ場合**: Core の部分は、Core の商用ライセンスが必要になります
 
-> **要確認（法務）:** 本ソフトウェアの商用ライセンスと Core の商用ライセンスを
-> まとめて契約するか、別々に契約するか、条件をどうするかは決めていません。
-> Core の条件は [Core の LICENSING.md](https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Core/blob/develop/LICENSING.md) を参照してください。
+本ソフトウェアの商用ライセンスと Core の商用ライセンスを
+まとめて契約するか、別々に契約するか、条件をどうするかは決めていません。
+Core の条件は [Core の LICENSING.md](https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Core/blob/develop/LICENSING.md) を参照してください。
 
 現時点では、Core はまだ依存に追加していません（`packages.lock.json` に含まれません）。
 追加する作業で、採用版と推移依存のライセンスを再確認します。

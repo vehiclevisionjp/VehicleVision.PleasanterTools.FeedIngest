@@ -4,8 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-PMC-Commercial
 
 RSS / Atom の取得と Pleasanter への作成・更新を目的とする。
 2026-10-22 現在は基盤実装段階。取り込み機能は未実装。
-FeedIngest は AGPL-3.0-or-later と商用ライセンスのデュアルで提供する（草案。法務の確認前。LICENSING.md）。
-商用側を選ぶ場合は、共通部品 Core.Data の商用ライセンスも必要になる見込み（条件は法務の確認中）。
+FeedIngest は AGPL-3.0-or-later と商用ライセンスのデュアルで提供する（LICENSING.md）。
+商用側を選ぶ場合は、共通部品 Core.Data の商用ライセンスも必要になる見込み。
 
 開発運用と Actions の構成、および指示同期・参照更新スクリプトは次を参考にしています。
 VehicleVision.PleasanterTools.Questionnaire
