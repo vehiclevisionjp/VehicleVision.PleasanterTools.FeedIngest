@@ -32,8 +32,8 @@ https://github.com/xunit/visualstudio.xunit/blob/main/License.txt
 coverlet.collector — MIT
 https://github.com/coverlet-coverage/coverlet/blob/master/LICENSE
 
-直接・推移依存の全閉包（net10.0、参照日: 2026-10-22）:
-System.ServiceModel.Syndication 10.0.13 / MIT
+直接・推移依存の全閉包（net10.0、参照日: 2026-11-01）:
+System.ServiceModel.Syndication 10.0.14 / MIT
 coverlet.collector 10.1.0 / MIT
 Microsoft.CodeCoverage 18.11.0 / MIT
 Microsoft.NET.Test.Sdk 18.11.0 / MIT
@@ -56,7 +56,7 @@ Syndication は Feeds の採用依存。net10.0 向けの追加推移依存は�
 System.ServiceModel.Syndication
 Copyright (c) .NET Foundation and Contributors
 © Microsoft Corporation. All rights reserved.
-https://github.com/dotnet/runtime/blob/v10.0.13/LICENSE.TXT
+https://github.com/dotnet/runtime/blob/v10.0.14/LICENSE.TXT
 
 The MIT License (MIT)
 
