@@ -9,6 +9,18 @@
   <ItemGroup>
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Pleasanter\VehicleVision.PleasanterTools.FeedIngest.Pleasanter.csproj" />
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Feeds\VehicleVision.PleasanterTools.FeedIngest.Feeds.csproj" />
+    <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Data\VehicleVision.PleasanterTools.FeedIngest.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- **暫定策（Issue #75、決定は #66。Core の修正版が出たら外す）。**
+         Core.Data 0.1.0 は全方言のメタパッケージ FluentMigrator.Runner に依存するため、IBM Db2 のドライバ（Net.IBM.Data.Db2。
+         IBM 独自の許諾。build／publish の出力へ IBM Db2 のネイティブドライバ clidriver が入る）と Firebird のドライバ
+         （FirebirdSql.Data.FirebirdClient。IDPL 1.0）が推移的に入る。FeedIngest は SQLite・SQL Server・PostgreSQL・MySQL だけを使うので、
+         配布物へ入れない（restore はされるが、出力・実行時の資産は取り込まない）。
+         Core が 4 方言のランナーだけに依存する版を出したら、この 2 行と license-check.ps1 の $notDistributed を外す -->
+    <PackageReference Include="Net.IBM.Data.Db2" Version="9.0.0.300" ExcludeAssets="all" />
+    <PackageReference Include="FirebirdSql.Data.FirebirdClient" Version="10.3.3" ExcludeAssets="all" />
   </ItemGroup>
 
 </Project>

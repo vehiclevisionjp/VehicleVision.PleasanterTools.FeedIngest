@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Core\VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- DB の基盤（接続・暗号化の設定・DbTime・マイグレーションと排他・SqlDialect の汎用部分）。Core のパッケージ。
+         Core が持つ依存（Dapper・FluentMigrator・DB ドライバなど）は、ここで宣言し直さない（版のずれの原因になる） -->
+    <PackageReference Include="VehicleVision.PleasanterTools.Core.Data" Version="0.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 暫定策（Issue #75、決定は #66。Core の修正版が出たら外す）。Cli の csproj のコメントを参照。
+         ここでも外さないと、プロジェクト参照を通じて IBM Db2 の clidriver（Net.IBM.Data.Db2 の build 資産）が Cli の出力へ流れる -->
+    <PackageReference Include="Net.IBM.Data.Db2" Version="9.0.0.300" ExcludeAssets="all" />
+    <PackageReference Include="FirebirdSql.Data.FirebirdClient" Version="10.3.3" ExcludeAssets="all" />
+  </ItemGroup>
+</Project>
