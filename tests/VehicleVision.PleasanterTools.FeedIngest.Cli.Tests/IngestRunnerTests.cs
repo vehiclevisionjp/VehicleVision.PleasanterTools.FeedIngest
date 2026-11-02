@@ -12,13 +12,13 @@ public sealed class IngestRunnerTests
 {
     private const string ApiKey = "secret-api-key";
 
-    private static string Rss(params string[] items)
+    internal static string Rss(params string[] items)
         => $"""<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>t</title>{string.Concat(items)}</channel></rss>""";
 
-    private static string Item(string guid, string title = "題名")
+    internal static string Item(string guid, string title = "題名")
         => $"<item><guid>{guid}</guid><title>{title}</title><link>https://news.example.test/{guid}</link></item>";
 
-    private static FeedIngestConfiguration Config(string mappingExtra = "", bool secondSource = false, string secondAuth = """{"type": "none"}""")
+    internal static FeedIngestConfiguration Config(string mappingExtra = "", bool secondSource = false, string secondAuth = """{"type": "none"}""")
     {
         var second = secondSource
             ? $$$"""
@@ -45,7 +45,7 @@ public sealed class IngestRunnerTests
             """);
     }
 
-    private sealed class FakeFeeds(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    internal sealed class FakeFeeds(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         public List<HttpRequestMessage> Requests { get; } = [];
 
@@ -56,10 +56,10 @@ public sealed class IngestRunnerTests
         }
     }
 
-    private static HttpResponseMessage Xml(string body)
+    internal static HttpResponseMessage Xml(string body)
         => new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/rss+xml") };
 
-    private sealed class FakePleasanter : HttpMessageHandler
+    internal sealed class FakePleasanter : HttpMessageHandler
     {
         public List<JsonObject> Rows { get; } = [];
 
@@ -134,7 +134,7 @@ public sealed class IngestRunnerTests
         }
     }
 
-    private static HttpResponseMessage Json(JsonNode node, HttpStatusCode status = HttpStatusCode.OK)
+    internal static HttpResponseMessage Json(JsonNode node, HttpStatusCode status = HttpStatusCode.OK)
         => new(status) { Content = new StringContent(node.ToJsonString(), Encoding.UTF8, "application/json") };
 
     private static (IngestRunner Runner, StringWriter Output) Create(

@@ -1,6 +1,8 @@
 using VehicleVision.PleasanterTools.Core.Data;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
+using VehicleVision.PleasanterTools.FeedIngest.Core.State;
+using VehicleVision.PleasanterTools.FeedIngest.Data;
 using VehicleVision.PleasanterTools.FeedIngest.Feeds;
 using VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
 
@@ -13,7 +15,8 @@ public static class CliApp
         "Usage:\n"
         + "  VehicleVision.PleasanterTools.FeedIngest check\n"
         + "  VehicleVision.PleasanterTools.FeedIngest ingest --config <file> [--dry-run]\n"
-        + "  VehicleVision.PleasanterTools.FeedIngest migrate | migrate-status";
+        + "  VehicleVision.PleasanterTools.FeedIngest migrate | migrate-status\n"
+        + "  VehicleVision.PleasanterTools.FeedIngest unlock";
 
     public static async Task<int> RunAsync(
         string[] args, TextWriter output, TextWriter error, Func<string, string?>? environment, CancellationToken cancellationToken)
@@ -41,6 +44,11 @@ public static class CliApp
         if (args.Length == 1 && args[0] is "migrate" or "migrate-status")
         {
             return await MigrateAsync(args[0], error, environment, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (args.Length == 1 && args[0] == "unlock")
+        {
+            return await UnlockAsync(output, error, environment, cancellationToken).ConfigureAwait(false);
         }
 
         if (args.Length >= 1 && args[0] == "ingest")
@@ -71,6 +79,40 @@ public static class CliApp
             // 設定の誤り。接続文字列などの値は含まれない
             error.WriteLine(ex.Message);
             return 2;
+        }
+    }
+
+    /// <summary>
+    /// 異常終了で残った実行の排他を、運用者の明示操作で解除する。
+    /// **他の実行が本当に動いていないことを確認してから使う**（動いている最中に解除すると二重に実行され得る）。
+    /// </summary>
+    private static async Task<int> UnlockAsync(
+        TextWriter output, TextWriter error, Func<string, string?>? environment, CancellationToken token)
+    {
+        try
+        {
+            var database = DatabaseSetup.Resolve(environment ?? Environment.GetEnvironmentVariable, Directory.GetCurrentDirectory());
+            if (FeedIngestDatabase.Instance.Migrator.HasPendingMigrations(database.Provider, database.ConnectionString))
+            {
+                error.WriteLine("The state database is not up to date. Run 'migrate' first.");
+                return 2;
+            }
+
+            var store = new IngestStateStore(new DbConnectionFactory(database.Provider, database.ConnectionString));
+            output.WriteLine(await store.ForceEndActiveRunAsync(token).ConfigureAwait(false)
+                ? "Released the active run lock."
+                : "No active run lock.");
+            return 0;
+        }
+        catch (InvalidOperationException ex)
+        {
+            error.WriteLine(ex.Message);
+            return 2;
+        }
+        catch (System.Data.Common.DbException)
+        {
+            error.WriteLine("The state database failed.");
+            return 1;
         }
     }
 
@@ -143,6 +185,7 @@ public static class CliApp
             using var pleasanterHandler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false };
             using var pleasanterHttp = new HttpClient(pleasanterHandler);
             ExternalKeyUpserter? upserter = null;
+            IIngestStateStore? stateStore = null;
             if (!dryRun)
             {
                 var options = new PleasanterOptions
@@ -152,6 +195,16 @@ public static class CliApp
                     ApiVersion = configuration.Pleasanter.ApiVersion,
                 };
                 upserter = new ExternalKeyUpserter(new PleasanterApiClient(pleasanterHttp, options));
+
+                // 状態 DB（取得状態・配送・実行排他）。マイグレーション済みであること
+                var database = DatabaseSetup.Resolve(environment ?? Environment.GetEnvironmentVariable, Directory.GetCurrentDirectory());
+                if (FeedIngestDatabase.Instance.Migrator.HasPendingMigrations(database.Provider, database.ConnectionString))
+                {
+                    error.WriteLine("The state database is not up to date. Run 'migrate' first.");
+                    return 2;
+                }
+
+                stateStore = new IngestStateStore(new DbConnectionFactory(database.Provider, database.ConnectionString));
             }
 
             var runner = new IngestRunner(
@@ -166,9 +219,17 @@ public static class CliApp
                     }),
                 upserter,
                 environment,
-                output);
+                output,
+                stateStore,
+                $"{Environment.ProcessId}@{Environment.MachineName}");
             var report = await runner.RunAsync(dryRun, token).ConfigureAwait(false);
             return report.ExitCode;
+        }
+        catch (System.Data.Common.DbException)
+        {
+            // 状態 DB の障害。送信前に止まる。接続文字列・SQL は出さない
+            error.WriteLine("The state database failed.");
+            return 1;
         }
         catch (InvalidOperationException ex)
         {
