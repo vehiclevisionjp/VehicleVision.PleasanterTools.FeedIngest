@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Core\VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
-    <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.14" />
   </ItemGroup>
 </Project>
