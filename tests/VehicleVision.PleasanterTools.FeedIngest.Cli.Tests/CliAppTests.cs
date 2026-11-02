@@ -36,6 +36,7 @@ public sealed class CliAppTests
     [InlineData]
     [InlineData("unknown")]
     [InlineData("check", "extra")]
+    [InlineData("migrate", "extra")]
     [InlineData("ingest")]
     [InlineData("ingest", "--config")]
     [InlineData("ingest", "--dry-run")]
@@ -114,6 +115,46 @@ public sealed class CliAppTests
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public async Task migrateは状態DBを作りmigrateStatusは未適用なら1で適用済みなら0()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "feedingest-cli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var env = new Dictionary<string, string>
+        {
+            ["FEEDINGEST_DB_PROVIDER"] = "sqlite",
+            ["FEEDINGEST_DB_CONNECTIONSTRING"] = $"Data Source={Path.Combine(directory, "feedingest.db")}",
+        };
+        string? Environment(string name) => env.GetValueOrDefault(name);
+        try
+        {
+            var before = await RunAsync(["migrate-status"], Environment);
+            var applied = await RunAsync(["migrate"], Environment);
+            var after = await RunAsync(["migrate-status"], Environment);
+
+            Assert.Equal(1, before.Code);
+            Assert.Equal(0, applied.Code);
+            Assert.Equal(0, after.Code);
+            Assert.True(File.Exists(Path.Combine(directory, "feedingest.db")));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task 状態DBの設定が不正なら終了コード2()
+    {
+        var env = new Dictionary<string, string> { ["FEEDINGEST_DB_PROVIDER"] = "no-such-db" };
+
+        var (code, _, error) = await RunAsync(["migrate"], name => env.GetValueOrDefault(name));
+
+        Assert.Equal(2, code);
+        Assert.Contains("FEEDINGEST_DB_PROVIDER", error, StringComparison.Ordinal);
     }
 
     [Fact]

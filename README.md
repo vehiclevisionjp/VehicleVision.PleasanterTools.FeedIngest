@@ -9,7 +9,7 @@ RSS / Atom のフィードを取得し、記事を Pleasanter の列へ対応づ
 フェイク通信の単体試験だけで確認しており、実機 Pleasanter・実際のフィードでは未確認です。**
 `ingest --config <設定ファイル>` で 1 回取り込んで終了します（[取り込み](#取り込み) を参照）。
 
-**永続状態（取得状態・送信状態・実行排他の DB）は未実装です。** そのため、条件付き取得（ETag）は使わず毎回取得し、
+**永続状態（取得状態・送信状態・実行排他）の DB は、保存層（`.Data`、既定は SQLite）と `migrate` コマンドまでを実装し、`ingest` はまだ使っていません。** そのため、条件付き取得（ETag）は使わず毎回取得し、
 前回送った値を覚えていません（既存レコードの所有列が取り込み値と違えば毎回上書きします）。
 同じ送り先へ同時に 2 つ実行しないでください。
 
@@ -29,6 +29,18 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 終了コードは 0＝全対象が成功または変更なし、1＝一部でも保留・失敗・未処理、2＝使い方・設定の誤り、130＝中断です。
 出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。
 取り込み先には、外部キー用に未使用の Class 列（選択肢なし）を 1 本確保してください。
+
+## 状態 DB
+
+```powershell
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- migrate-status   # 未適用があれば終了コード 1
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- migrate
+```
+
+状態 DB は既定で SQLite（`App_Data/feedingest.db`）です。接続先は環境変数 `FEEDINGEST_DB_PROVIDER`・
+`FEEDINGEST_DB_CONNECTIONSTRING`・`FEEDINGEST_DB_ALLOW_INSECURE` で指定します（接続文字列は設定ファイルへ書きません）。
+記事のスナップショット（本文・enclosure の URL）を保存するので、DB のアクセスを制限してください。
+`ingest` が状態を使うのは次の作業（Issue #77）です。
 
 ## 接続確認
 
