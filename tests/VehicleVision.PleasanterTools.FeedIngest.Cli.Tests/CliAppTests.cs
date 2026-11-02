@@ -37,6 +37,7 @@ public sealed class CliAppTests
     [InlineData("unknown")]
     [InlineData("check", "extra")]
     [InlineData("migrate", "extra")]
+    [InlineData("unlock", "extra")]
     [InlineData("ingest")]
     [InlineData("ingest", "--config")]
     [InlineData("ingest", "--dry-run")]
@@ -138,6 +139,67 @@ public sealed class CliAppTests
             Assert.Equal(0, applied.Code);
             Assert.Equal(0, after.Code);
             Assert.True(File.Exists(Path.Combine(directory, "feedingest.db")));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ingestは状態DBがマイグレーション前なら通信せず終了コード2()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "feedingest-cli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var path = WriteConfig(ValidConfig);
+        var env = new Dictionary<string, string>
+        {
+            ["FEEDINGEST_TEST_API_KEY"] = "test-key",
+            ["FEEDINGEST_DB_PROVIDER"] = "sqlite",
+            ["FEEDINGEST_DB_CONNECTIONSTRING"] = $"Data Source={Path.Combine(directory, "feedingest.db")}",
+        };
+        try
+        {
+            var (code, output, error) = await RunAsync(["ingest", "--config", path], name => env.GetValueOrDefault(name));
+
+            Assert.Equal(2, code);
+            Assert.Contains("migrate", error, StringComparison.Ordinal);
+            Assert.Empty(output);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            File.Delete(path);
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task unlockは残った排他を解除し_排他が無ければその旨を出す()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "feedingest-cli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var connectionString = $"Data Source={Path.Combine(directory, "feedingest.db")}";
+        var env = new Dictionary<string, string>
+        {
+            ["FEEDINGEST_DB_PROVIDER"] = "sqlite",
+            ["FEEDINGEST_DB_CONNECTIONSTRING"] = connectionString,
+        };
+        string? Environment(string name) => env.GetValueOrDefault(name);
+        try
+        {
+            Assert.Equal(0, (await RunAsync(["migrate"], Environment)).Code);
+            var store = new VehicleVision.PleasanterTools.FeedIngest.Data.IngestStateStore(
+                new VehicleVision.PleasanterTools.Core.Data.DbConnectionFactory(
+                    VehicleVision.PleasanterTools.Core.Data.DatabaseProvider.Sqlite, connectionString));
+            var none = await RunAsync(["unlock"], Environment);
+            await store.TryBeginRunAsync("crashed");
+            var released = await RunAsync(["unlock"], Environment);
+
+            Assert.Contains("No active run lock", none.Out, StringComparison.Ordinal);
+            Assert.Contains("Released", released.Out, StringComparison.Ordinal);
+            Assert.Null(await store.FindActiveRunAsync());
         }
         finally
         {

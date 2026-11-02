@@ -5,13 +5,15 @@ RSS / Atom のフィードを取得し、記事を Pleasanter の列へ対応づ
 
 ## 現在の状態
 
-**取り込みの最小の流れ（取得 → 解析 → 対応づけ → 外部キー照合 → 作成・更新）を実装した段階です。
-フェイク通信の単体試験だけで確認しており、実機 Pleasanter・実際のフィードでは未確認です。**
-`ingest --config <設定ファイル>` で 1 回取り込んで終了します（[取り込み](#取り込み) を参照）。
+**取り込みの流れ（取得 → 解析 → 対応づけ → 外部キー照合 → 作成・更新）と、状態 DB による再実行・再開を実装した段階です。
+フェイク通信の単体試験と一時 SQLite の試験だけで確認しており、実機 Pleasanter・実際のフィードでは未確認です。**
+先に `migrate` で状態 DB を作り、`ingest --config <設定ファイル>` で 1 回取り込んで終了します（[状態 DB](#状態-db)・[取り込み](#取り込み) を参照）。
 
-**永続状態（取得状態・送信状態・実行排他）の DB は、保存層（`.Data`、既定は SQLite）と `migrate` コマンドまでを実装し、`ingest` はまだ使っていません。** そのため、条件付き取得（ETag）は使わず毎回取得し、
-前回送った値を覚えていません（既存レコードの所有列が取り込み値と違えば毎回上書きします）。
-同じ送り先へ同時に 2 つ実行しないでください。
+状態 DB（既定は SQLite）には、取得の検証子（ETag・Last-Modified）、記事のスナップショット、送信した値のハッシュを保存します。
+そのため、フィードが変わっていなければ 304 で済み、送る値が変わっていなければ Pleasanter の API を呼びません
+（利用者が所有列を編集していても、送る値が変わらない限り戻しません）。前回の実行が途中で止まっても、保存済みの記事から再開します。
+同じ状態 DB を使う実行は 1 つだけです（2 本目は何もせず終了コード 1。異常終了で排他が残った場合は、他の実行が動いていないことを確認してから `unlock` で解除します）。
+`--dry-run` は状態 DB も Pleasanter も使いません。
 
 初回実装では RSS 2.0 / Atom 1.0 を対象にします。
 管理画面・スケジューラ・Docker 化は次の段階であり、現時点では提供しません。
@@ -35,12 +37,13 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 ```powershell
 dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- migrate-status   # 未適用があれば終了コード 1
 dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- migrate
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- unlock           # 異常終了で残った実行の排他を解除（他の実行が無いことを確認してから）
 ```
 
 状態 DB は既定で SQLite（`App_Data/feedingest.db`）です。接続先は環境変数 `FEEDINGEST_DB_PROVIDER`・
 `FEEDINGEST_DB_CONNECTIONSTRING`・`FEEDINGEST_DB_ALLOW_INSECURE` で指定します（接続文字列は設定ファイルへ書きません）。
 記事のスナップショット（本文・enclosure の URL）を保存するので、DB のアクセスを制限してください。
-`ingest` が状態を使うのは次の作業（Issue #77）です。
+`ingest`（`--dry-run` 以外）は、マイグレーション済みの状態 DB が必要です（未適用なら終了コード 2）。
 
 ## 接続確認
 
