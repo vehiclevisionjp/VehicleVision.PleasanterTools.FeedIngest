@@ -278,6 +278,24 @@ public sealed class EntryMapperTests
     }
 
     [Fact]
+    public void linkの外部キーはUriの正規形でfragmentを含まずdot_segmentを解決する()
+    {
+        string KeyOf(string url) => ExternalKey.For(new NormalizedEntry(
+            "s", null, EntryIdentityKind.Link, new Uri(url), null, null, null, EntryContentKind.Text));
+
+        Assert.Equal(KeyOf("https://news.example.test/a/b?x=1"), KeyOf("https://news.example.test/a/b?x=1#section"));
+        Assert.Equal(KeyOf("https://news.example.test/a/b"), KeyOf("https://news.example.test/a/c/../b"));
+        Assert.Equal(KeyOf("https://news.example.test/a/b"), KeyOf("https://news.example.test/a/./b"));
+        Assert.Equal(
+            "https://news.example.test/a b".Replace(" ", "%20", StringComparison.Ordinal),
+            new Uri("https://news.example.test/a b").GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.UriEscaped));
+        Assert.Equal(
+            "https://news.example.test/a%20b?x=1",
+            ExternalKey.IdentityOf(new NormalizedEntry(
+                "s", null, EntryIdentityKind.Link, new Uri("HTTPS://News.Example.TEST:443/a%20b?x=1#f"), null, null, null, EntryContentKind.Text)));
+    }
+
+    [Fact]
     public void 元IDの外部キーはリンクの変更で変わらない()
     {
         NormalizedEntry With(string link) => new("s", "guid-1", EntryIdentityKind.NativeId, new Uri(link), null, null, null, EntryContentKind.Text);

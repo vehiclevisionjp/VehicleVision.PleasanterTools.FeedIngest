@@ -47,8 +47,8 @@ public static class ExternalKey
     }
 
     /// <summary>
-    /// 識別に使う文字列。元 ID はそのまま。link は scheme・host・既定ポートだけ正規化し、
-    /// path と query は保つ（<see cref="Uri"/> が行う百分率エンコードの正規化を含む）。
+    /// 識別に使う文字列。元 ID はそのまま。link は <see cref="Uri"/> の正規形（scheme・host の小文字化、既定ポートの省略、
+    /// 百分率エンコードの正規化、dot segment の解決を含む）にする。fragment は含めない。path・query の大小と並びは保つ。
     /// </summary>
     public static string IdentityOf(NormalizedEntry entry)
     {
