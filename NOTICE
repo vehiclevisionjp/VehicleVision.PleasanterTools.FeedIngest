@@ -49,7 +49,7 @@ xunit.extensibility.execution 2.9.3 / Apache-2.0
 xunit.runner.visualstudio 4.0.1 / Apache-2.0
 
 Syndication は Feeds の採用依存。net10.0 向けの追加推移依存はない。
-現在の check CLI は Feeds を参照せず、Syndication を配布しない。
+CLI は取り込みのため Feeds を参照するので、Syndication（MIT。上記の本文）を配布物に含む。現在の解析は Syndication を呼び出していない。
 テスト用依存も配布しない。実際の解決版とハッシュは各 packages.lock.json に記録する。
 一次情報と旧 xunit.abstractions の確認根拠は _documents/設計の参照情報.md を参照。
 

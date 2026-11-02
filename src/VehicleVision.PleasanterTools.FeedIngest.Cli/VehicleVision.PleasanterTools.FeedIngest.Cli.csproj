@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Pleasanter\VehicleVision.PleasanterTools.FeedIngest.Pleasanter.csproj" />
+    <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Feeds\VehicleVision.PleasanterTools.FeedIngest.Feeds.csproj" />
   </ItemGroup>
 
 </Project>
