@@ -2,12 +2,6 @@
   "version": 1,
   "dependencies": {
     "net10.0": {
-      "System.ServiceModel.Syndication": {
-        "type": "Direct",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "ZzwABDyElVmQSorO7Q2Q7KazjpmPLTBwR0DujZ03Z7h748qxFHjiMq/uYIIA6+2cNDCJ3T3Lll3m7+7Q82Hoiw=="
-      },
       "vehiclevision.pleasantertools.feedingest.core": {
         "type": "Project"
       }

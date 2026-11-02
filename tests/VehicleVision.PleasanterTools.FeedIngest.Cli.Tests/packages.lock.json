@@ -53,11 +53,6 @@
           "Microsoft.TestPlatform.ObjectModel": "18.11.0"
         }
       },
-      "System.ServiceModel.Syndication": {
-        "type": "Transitive",
-        "resolved": "10.0.14",
-        "contentHash": "ZzwABDyElVmQSorO7Q2Q7KazjpmPLTBwR0DujZ03Z7h748qxFHjiMq/uYIIA6+2cNDCJ3T3Lll3m7+7Q82Hoiw=="
-      },
       "xunit.abstractions": {
         "type": "Transitive",
         "resolved": "2.0.3",
@@ -111,7 +106,6 @@
       "vehiclevision.pleasantertools.feedingest.feeds": {
         "type": "Project",
         "dependencies": {
-          "System.ServiceModel.Syndication": "[10.0.14, )",
           "VehicleVision.PleasanterTools.FeedIngest.Core": "[0.1.0, )"
         }
       },
