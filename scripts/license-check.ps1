@@ -19,21 +19,36 @@ foreach ($directory in @('src', 'tests')) {
     }
 }
 if ($packages.Count -eq 0) { throw '依存ロックが見つかりません。' }
+# restore はされるが、配布物へ含めない依存（Issue #75、決定は #66。暫定策）。
+# Core.Data 0.1.0 が全方言の FluentMigrator.Runner 経由で伴う IBM Db2・Firebird のドライバは、Cli と Data の csproj で
+# ExcludeAssets=all にして出力から外している（publish の出力に IBM.Data.Db2・clidriver・FirebirdSql が無いことは PR で確認した）。
+# 配布しないので NOTICE の対象にしない。Core の修正版が出てこれらが閉包から消えたら、この指定と csproj の ExcludeAssets を外す。
+$notDistributed = @('Net.IBM.Data.Db2', 'FirebirdSql.Data.FirebirdClient')
+# SPDX 式を持たない依存の、承認済みの例外（NOTICE の行に書くライセンス表記）。
+# Core.Data: 自社の共通部品（AGPL／商用。U2、2026-11-01 の決定）。SNI.runtime: Microsoft 独自の許諾（2026-10-20 の決定。条件は LICENSING.md）。
+$exceptions = @{
+    'VehicleVision.PleasanterTools.Core.Data' = 'AGPL-3.0-or-later または商用（自社）'
+    'Microsoft.Data.SqlClient.SNI.runtime' = 'Microsoft Software License Terms（MICROSOFT.DATA.SQLCLIENT.SNI LIBRARY）'
+}
 $failed = $false
 foreach ($entry in $packages.GetEnumerator() | Sort-Object Key) {
     $id, $version = $entry.Value
+    if ($notDistributed -contains $id) { continue }
     $path = Join-Path $cache "$($id.ToLowerInvariant())\$($version.ToLowerInvariant())\$($id.ToLowerInvariant()).nuspec"
     [xml]$nuspec = Get-Content -LiteralPath $path -Raw
     $metadata = $nuspec.package.metadata
     $license = [string]$metadata.license.'#text'
-    if ($id -eq 'xunit.abstractions' -and $version -eq '2.0.3' -and
+    if ($exceptions.ContainsKey($id)) {
+        $license = $exceptions[$id]
+    } elseif ($id -eq 'xunit.abstractions' -and $version -eq '2.0.3' -and
         $metadata.licenseUrl -eq 'https://raw.githubusercontent.com/xunit/xunit/master/license.txt') {
         # SPDX欄のない旧パッケージ。一次情報の確認記録は設計の参照情報.mdに固定する。
         $license = 'Apache-2.0'
     } elseif ($metadata.license.type -ne 'expression') {
         throw "ライセンスの個別確認が必要です: $id $version"
     }
-    if (!$NoticeOnly -and $license -notin @('MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD', 'ISC')) {
+    if (!$NoticeOnly -and !$exceptions.ContainsKey($id) -and
+        $license -notin @('MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD', 'ISC', 'PostgreSQL')) {
         throw "許可していないライセンスです: $id $version / $license"
     }
     $expected = "$id $version / $license"

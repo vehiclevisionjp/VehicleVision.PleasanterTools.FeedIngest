@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Data/VehicleVision.PleasanterTools.FeedIngest.Data.csproj" />
     <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Core/VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
     <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Cli/VehicleVision.PleasanterTools.FeedIngest.Cli.csproj" />
     <Project Path="src/VehicleVision.PleasanterTools.FeedIngest.Feeds/VehicleVision.PleasanterTools.FeedIngest.Feeds.csproj" />
