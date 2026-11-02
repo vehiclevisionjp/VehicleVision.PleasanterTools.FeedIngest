@@ -1,3 +1,4 @@
+using VehicleVision.PleasanterTools.Core.Data;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 using VehicleVision.PleasanterTools.FeedIngest.Feeds;
@@ -11,7 +12,8 @@ public static class CliApp
     public const string Usage =
         "Usage:\n"
         + "  VehicleVision.PleasanterTools.FeedIngest check\n"
-        + "  VehicleVision.PleasanterTools.FeedIngest ingest --config <file> [--dry-run]";
+        + "  VehicleVision.PleasanterTools.FeedIngest ingest --config <file> [--dry-run]\n"
+        + "  VehicleVision.PleasanterTools.FeedIngest migrate | migrate-status";
 
     public static async Task<int> RunAsync(
         string[] args, TextWriter output, TextWriter error, Func<string, string?>? environment, CancellationToken cancellationToken)
@@ -36,6 +38,11 @@ public static class CliApp
             return await CheckAsync(output, error, environment).ConfigureAwait(false);
         }
 
+        if (args.Length == 1 && args[0] is "migrate" or "migrate-status")
+        {
+            return await MigrateAsync(args[0], error, environment, cancellationToken).ConfigureAwait(false);
+        }
+
         if (args.Length >= 1 && args[0] == "ingest")
         {
             return await IngestAsync(args, output, error, environment, cancellationToken).ConfigureAwait(false);
@@ -43,6 +50,28 @@ public static class CliApp
 
         error.WriteLine(Usage);
         return 2;
+    }
+
+    /// <summary>状態 DB のマイグレーションを当てる（migrate）／未適用を見る（migrate-status。未適用があれば 1）。</summary>
+    private static async Task<int> MigrateAsync(
+        string command, TextWriter error, Func<string, string?>? environment, CancellationToken token)
+    {
+        try
+        {
+            return await DatabaseSetup
+                .MigrateAsync(
+                    command == "migrate" ? MigrationCommand.ApplyArgument : MigrationCommand.StatusArgument,
+                    environment ?? Environment.GetEnvironmentVariable,
+                    Directory.GetCurrentDirectory(),
+                    token)
+                .ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // 設定の誤り。接続文字列などの値は含まれない
+            error.WriteLine(ex.Message);
+            return 2;
+        }
     }
 
     private static async Task<int> CheckAsync(TextWriter output, TextWriter error, Func<string, string?>? environment)
