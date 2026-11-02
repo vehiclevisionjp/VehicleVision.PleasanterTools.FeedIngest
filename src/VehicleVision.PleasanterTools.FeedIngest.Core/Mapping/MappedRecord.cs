@@ -111,7 +111,7 @@ public sealed class MappedRecord
     }
 
     /// <summary>列名から、API の入れ物の名前（ClassHash 等）を返す。</summary>
-    internal static string HashName(string column)
+    public static string HashName(string column)
     {
         foreach (var kind in new[] { "Class", "Date", "Description", "Num", "Check" })
         {

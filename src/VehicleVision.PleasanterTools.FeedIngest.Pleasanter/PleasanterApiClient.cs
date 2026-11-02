@@ -31,12 +31,16 @@ public enum PleasanterErrorKind
 /// <param name="Id">作成・更新されたレコードの ID。</param>
 /// <param name="Message">Pleasanter が返した文言。</param>
 /// <param name="Body">応答の中身。</param>
+/// <param name="ApiStatusCode">応答 JSON の <c>StatusCode</c>。HTTP が 200 でもこれが 200 以外なら失敗として分類する。</param>
+/// <param name="RetryAfter">Retry-After ヘッダ（秒・日時のどちらも）。無ければ <c>null</c>。</param>
 public sealed record PleasanterResponse(
     PleasanterErrorKind ErrorKind,
     int? StatusCode = null,
     long? Id = null,
     string? Message = null,
-    JsonNode? Body = null)
+    JsonNode? Body = null,
+    int? ApiStatusCode = null,
+    TimeSpan? RetryAfter = null)
 {
     public bool IsSuccess => ErrorKind is PleasanterErrorKind.None;
 }
@@ -91,6 +95,17 @@ public sealed class PleasanterApiClient(
         => PostAsync(
             $"api/items/{siteId}/Get",
             view is null ? new Dictionary<string, object?>() : new Dictionary<string, object?> { ["View"] = view },
+            cancellationToken);
+
+    /// <summary>サイトのレコードを、先頭からの位置を指定して取り出す（全ページの走査用）。</summary>
+    public Task<PleasanterResponse> GetPageAsync(
+        long siteId,
+        IReadOnlyDictionary<string, object?> view,
+        int offset,
+        CancellationToken cancellationToken = default)
+        => PostAsync(
+            $"api/items/{siteId}/Get",
+            new Dictionary<string, object?> { ["View"] = view, ["Offset"] = offset },
             cancellationToken);
 
     /// <summary>サイト設定を取り出す。</summary>
@@ -161,12 +176,60 @@ public sealed class PleasanterApiClient(
                 // Pleasanter は JSON を返す。返らないなら経路の問題とみなす
             }
 
+            var apiStatus = ReadInt(node?["StatusCode"]);
+            var kind = Classify(response.StatusCode);
+            if (kind is PleasanterErrorKind.None && apiStatus is not null && apiStatus != 200)
+            {
+                // HTTP は 200 でも、JSON の StatusCode が失敗なら失敗として扱う
+                kind = Classify((HttpStatusCode)apiStatus.Value);
+            }
+
             return new PleasanterResponse(
-                Classify(response.StatusCode),
+                kind,
                 (int)response.StatusCode,
-                node?["Id"]?.GetValue<long?>(),
-                node?["Message"]?.GetValue<string?>(),
-                node);
+                ReadLong(node?["Id"]),
+                node?["Message"] is JsonValue message && message.TryGetValue<string>(out var text) ? text : null,
+                node,
+                apiStatus,
+                ParseRetryAfter(response));
         }
+    }
+
+    private static int? ReadInt(JsonNode? node)
+        => ReadLong(node) is { } value && value is >= int.MinValue and <= int.MaxValue ? (int)value : null;
+
+    private static long? ReadLong(JsonNode? node)
+    {
+        if (node is not JsonValue value)
+        {
+            return null;
+        }
+
+        if (value.TryGetValue<long>(out var number))
+        {
+            return number;
+        }
+
+        return value.TryGetValue<string>(out var text)
+            && long.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : null;
+    }
+
+    private static TimeSpan? ParseRetryAfter(HttpResponseMessage response)
+    {
+        var header = response.Headers.RetryAfter;
+        if (header?.Delta is { } delta)
+        {
+            return delta < TimeSpan.Zero ? TimeSpan.Zero : delta;
+        }
+
+        if (header?.Date is { } date)
+        {
+            var span = date - DateTimeOffset.UtcNow;
+            return span < TimeSpan.Zero ? TimeSpan.Zero : span;
+        }
+
+        return null;
     }
 }
