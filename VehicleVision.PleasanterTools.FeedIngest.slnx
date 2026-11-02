@@ -8,6 +8,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/VehicleVision.PleasanterTools.FeedIngest.Core.Tests/VehicleVision.PleasanterTools.FeedIngest.Core.Tests.csproj" />
     <Project Path="tests/VehicleVision.PleasanterTools.FeedIngest.Feeds.Tests/VehicleVision.PleasanterTools.FeedIngest.Feeds.Tests.csproj" />
+    <Project Path="tests/VehicleVision.PleasanterTools.FeedIngest.Cli.Tests/VehicleVision.PleasanterTools.FeedIngest.Cli.Tests.csproj" />
     <Project Path="tests/VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests/VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests.csproj" />
   </Folder>
 </Solution>

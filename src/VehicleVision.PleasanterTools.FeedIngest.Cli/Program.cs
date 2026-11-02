@@ -1,24 +1,12 @@
-using VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
+using VehicleVision.PleasanterTools.FeedIngest.Cli;
 
-// 接続確認だけを行う最小の CLI。ツールの実体はここへ足す。
-// 接続先は環境変数 PLEASANTER_BASE_URL / PLEASANTER_API_KEY で渡す。
-if (args.Length != 1 || args[0] != "check")
+// check: 接続確認（PLEASANTER_* / FEEDINGEST_PLEASANTER_* の環境変数）
+// ingest: 設定ファイルに従ってフィードを取り込む。Ctrl+C で中断（終了コード 130）
+using var cancellation = new CancellationTokenSource();
+Console.CancelKeyPress += (_, eventArgs) =>
 {
-    Console.Error.WriteLine("Usage: VehicleVision.PleasanterTools.FeedIngest check");
-    return 2;
-}
+    eventArgs.Cancel = true;
+    cancellation.Cancel();
+};
 
-try
-{
-    using var handler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false };
-    using var httpClient = new HttpClient(handler);
-    var client = new PleasanterApiClient(httpClient, PleasanterOptions.FromEnvironment());
-    var connected = await client.CheckConnectionAsync();
-    Console.WriteLine(connected ? "Connected." : "Connection failed.");
-    return connected ? 0 : 1;
-}
-catch (InvalidOperationException ex)
-{
-    Console.Error.WriteLine(ex.Message);
-    return 2;
-}
+return await CliApp.RunAsync(args, Console.Out, Console.Error, null, cancellation.Token);
