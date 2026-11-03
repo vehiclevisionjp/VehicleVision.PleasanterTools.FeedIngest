@@ -19,11 +19,6 @@ foreach ($directory in @('src', 'tests')) {
     }
 }
 if ($packages.Count -eq 0) { throw '依存ロックが見つかりません。' }
-# restore はされるが、配布物へ含めない依存（Issue #75、決定は #66。暫定策）。
-# Core.Data 0.1.0 が全方言の FluentMigrator.Runner 経由で伴う IBM Db2・Firebird のドライバは、Cli と Data の csproj で
-# ExcludeAssets=all にして出力から外している（publish の出力に IBM.Data.Db2・clidriver・FirebirdSql が無いことは PR で確認した）。
-# 配布しないので NOTICE の対象にしない。Core の修正版が出てこれらが閉包から消えたら、この指定と csproj の ExcludeAssets を外す。
-$notDistributed = @('Net.IBM.Data.Db2', 'FirebirdSql.Data.FirebirdClient')
 # SPDX 式を持たない依存の、承認済みの例外（NOTICE の行に書くライセンス表記）。
 # Core.Data: 自社の共通部品（AGPL／商用。U2、2026-11-01 の決定）。SNI.runtime: Microsoft 独自の許諾（2026-10-20 の決定。条件は LICENSING.md）。
 $exceptions = @{
@@ -33,7 +28,6 @@ $exceptions = @{
 $failed = $false
 foreach ($entry in $packages.GetEnumerator() | Sort-Object Key) {
     $id, $version = $entry.Value
-    if ($notDistributed -contains $id) { continue }
     $path = Join-Path $cache "$($id.ToLowerInvariant())\$($version.ToLowerInvariant())\$($id.ToLowerInvariant()).nuspec"
     [xml]$nuspec = Get-Content -LiteralPath $path -Raw
     $metadata = $nuspec.package.metadata
