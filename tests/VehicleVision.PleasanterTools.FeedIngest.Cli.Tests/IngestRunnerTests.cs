@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
+using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 using VehicleVision.PleasanterTools.FeedIngest.Feeds;
@@ -145,9 +146,9 @@ public sealed class IngestRunnerTests
         ExternalKeyUpserter? upserter = pleasanter is null
             ? null
             : new ExternalKeyUpserter(
-                new PleasanterApiClient(
-                    new HttpClient(pleasanter),
-                    new PleasanterOptions { BaseUrl = "https://pleasanter.example.test", ApiKey = ApiKey }),
+                new PleasanterGateway(
+                pleasanter,
+                new PleasanterOptions { BaseUrl = "https://pleasanter.example.test", ApiKey = ApiKey }),
                 new UpsertOptions { MinInterval = TimeSpan.Zero },
                 (_, _) => Task.CompletedTask);
         var runner = new IngestRunner(

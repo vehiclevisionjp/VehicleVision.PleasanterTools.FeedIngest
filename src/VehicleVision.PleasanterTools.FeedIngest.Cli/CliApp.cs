@@ -1,4 +1,5 @@
 using VehicleVision.PleasanterTools.Core.Data;
+using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 using VehicleVision.PleasanterTools.FeedIngest.Core.State;
@@ -120,15 +121,15 @@ public static class CliApp
     {
         try
         {
-            using var handler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false };
-            using var httpClient = new HttpClient(handler);
-            var client = new PleasanterApiClient(httpClient, PleasanterOptions.FromEnvironment(environment));
+            using var client = PleasanterGateway.Create(PleasanterEnvironment.FromEnvironment(environment));
             var connected = await client.CheckConnectionAsync().ConfigureAwait(false);
             output.WriteLine(connected ? "Connected." : "Connection failed.");
             return connected ? 0 : 1;
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            // 環境変数が無い・不正（InvalidOperationException）か、DotNetClient の BaseUrl 検査（ArgumentException）。
+            // 文言に API キーも URL も含まれない
             error.WriteLine(ex.Message);
             return 2;
         }
@@ -179,11 +180,10 @@ public static class CliApp
             return 2;
         }
 
+        PleasanterGateway? gateway = null;
         try
         {
             using var feedHandler = FeedFetcher.CreateDefaultHandler();
-            using var pleasanterHandler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false };
-            using var pleasanterHttp = new HttpClient(pleasanterHandler);
             ExternalKeyUpserter? upserter = null;
             IIngestStateStore? stateStore = null;
             if (!dryRun)
@@ -193,8 +193,10 @@ public static class CliApp
                     BaseUrl = configuration.Pleasanter.BaseUrl.GetLeftPart(UriPartial.Path).TrimEnd('/'),
                     ApiKey = configuration.Pleasanter.ApiKey.Resolve(environment),
                     ApiVersion = configuration.Pleasanter.ApiVersion,
+                    DetectServerVersion = false,
                 };
-                upserter = new ExternalKeyUpserter(new PleasanterApiClient(pleasanterHttp, options));
+                gateway = PleasanterGateway.Create(options);
+                upserter = new ExternalKeyUpserter(gateway);
 
                 // 状態 DB（取得状態・配送・実行排他）。マイグレーション済みであること
                 var database = DatabaseSetup.Resolve(environment ?? Environment.GetEnvironmentVariable, Directory.GetCurrentDirectory());
@@ -236,6 +238,10 @@ public static class CliApp
             // 秘密参照の解決失敗など。キー名以外の秘密内容は含まれない
             error.WriteLine(ex.Message);
             return 2;
+        }
+        finally
+        {
+            gateway?.Dispose();
         }
     }
 }

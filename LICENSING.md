@@ -79,11 +79,11 @@ AGPL の義務（ソースコード開示・コピーレフト）を負わずに
 <!-- license:begin pleasanter-note=free -->
 確認の方法と、本ソフトウェアの実装の範囲です。
 
-- 接続先は、資格情報を含まない HTTPS の URL に限ります（`PleasanterOptions`）
+- 接続先は、資格情報を含まない HTTPS の URL に限ります（環境変数からの読み込みと設定ファイルの検査。通信の前に DotNetClient も検査します）
 - `scripts/reference-isolation-check.sh`（CI で実行）が、`src`・`tests` の `.cs`・`.csproj` とビルド定義に
   `Implem.` と `_reference` への参照が無いことを検査します。`_reference/` に取得する本体は Git で追跡せず、
   配布 ZIP からも除外します（`scripts/package.ps1`）。規約は [`.github/copilot-instructions.md`](.github/copilot-instructions.md) の規約 6 にあります
-- 現時点の実装は、Pleasanter の標準 Web API を呼ぶ最小のクライアントと接続確認だけです。
+- 現時点の実装は、DotNetClient で Pleasanter の標準 Web API を呼ぶ取り込み（外部キーでの検索・作成・更新）と接続確認です。
   取得状態を保持する DB（`.Data`）は未実装で、設計では FeedIngest 専用の DB とし、Pleasanter の DB とは別にします
   （[`_documents/アーキテクチャ方針.md`](_documents/アーキテクチャ方針.md)）
 <!-- license:end pleasanter-note -->
@@ -100,7 +100,7 @@ AGPL の義務（ソースコード開示・コピーレフト）を負わずに
 **現時点では依存に追加していません**（`packages.lock.json` に含まれません）。
 追加する作業で、`core` の節を `on` に切り替え、採用版と推移依存のライセンスを再確認します。
 
-未公開の DotNetClient（LGPL）への依存は**禁止**です。設計の参考にとどめます。
+共通部品 DotNetClient（LGPL／AGPL／商用の 3 層）は、Pleasanter の Web API クライアントとして NuGet で利用します（下の例外の節）。
 <!-- license:end deps-note -->
 
 これは意図的な制約です。**コピーレフト系（GPL / AGPL / SSPL 等）の依存が 1 つでも入ると、
@@ -145,7 +145,19 @@ Core の条件は、次を参照してください。
 [Core の LICENSING.md](https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Core/blob/develop/LICENSING.md)
 <!-- license:end core -->
 
-<!-- license:begin dotnetclient=off -->
+<!-- license:begin dotnetclient=on -->
+### 例外: 当社の共通部品 DotNetClient（LGPL／AGPL／商用のトリプルライセンス）
+
+本ソフトウェアは、当社の共通部品 DotNetClient（`VehicleVision.PleasanterTools.DotNetClient` の NuGet パッケージ）を利用します。
+DotNetClient は寛容ライセンスではなく、**LGPL-3.0-or-later・AGPL-3.0-or-later・商用ライセンスの 3 層**で提供されます。
+著作権者は本ソフトウェアと同じ、当社です。
+
+- **A（AGPL）を選ぶ場合**: DotNetClient も AGPL で利用します
+- **B（商用）を選ぶ場合**: 本ソフトウェアの商用ライセンスは、本ソフトウェアに組み込まれた DotNetClient を含みます。
+  DotNetClient を単体で利用する場合と、当社のアプリケーション以外へ組み込む場合は、DotNetClient の条件によります
+
+DotNetClient の条件は、次を参照してください。
+[DotNetClient の LICENSING.md](https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.DotNetClient/blob/develop/LICENSING.md)
 <!-- license:end dotnetclient -->
 
 ## 貢献を受け取るとき

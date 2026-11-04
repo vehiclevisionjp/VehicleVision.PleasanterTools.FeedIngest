@@ -1,3 +1,4 @@
+using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
@@ -15,6 +16,8 @@ public sealed class ConfiguredPleasanterOptionsProvider(
             BaseUrl = configuration.BaseUrl.AbsoluteUri,
             ApiVersion = configuration.ApiVersion,
             ApiKey = configuration.ApiKey.Resolve(environment),
+            // 版の問い合わせの通信をしない（API 呼び出しの予算 UpsertOptions.MaxRequests の外で通信を増やさない）
+            DetectServerVersion = false,
         });
     }
 }

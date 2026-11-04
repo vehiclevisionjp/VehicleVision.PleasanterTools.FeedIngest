@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
+using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Mapping;
 
@@ -148,7 +149,7 @@ public sealed class ExternalKeyUpserterTests
         FakePleasanter server, UpsertOptions? options = null, TimeProvider? time = null)
     {
         var delays = new List<TimeSpan>();
-        var client = new PleasanterApiClient(new HttpClient(server), Options);
+        var client = new PleasanterGateway(server, Options);
         var upserter = new ExternalKeyUpserter(
             client,
             options ?? new UpsertOptions { MinInterval = TimeSpan.Zero },
@@ -684,7 +685,7 @@ public sealed class ExternalKeyUpserterTests
         var server = new FakePleasanter();
         var handler = new DelegatingTracker(server, () => Interlocked.Increment(ref concurrent), () => Interlocked.Decrement(ref concurrent), v => peak = Math.Max(peak, v));
         var upserter = new ExternalKeyUpserter(
-            new PleasanterApiClient(new HttpClient(handler), Options),
+            new PleasanterGateway(handler, Options),
             new UpsertOptions { MinInterval = TimeSpan.Zero },
             (_, _) => Task.CompletedTask);
 
