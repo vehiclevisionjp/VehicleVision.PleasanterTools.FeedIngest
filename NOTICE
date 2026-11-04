@@ -22,6 +22,13 @@ https://github.com/Implem/Implem.Pleasanter
 .NET — MIT
 https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
 
+Pleasanter Web API クライアント（Pleasanter プロジェクトが NuGet で参照し、CLI の配布物にも含まれる）:
+VehicleVision.PleasanterTools.DotNetClient 0.2.0 — LGPL-3.0-or-later OR AGPL-3.0-or-later OR 商用（LicenseRef-PMC-Commercial）の 3 層（自社）
+https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.DotNetClient
+NuGet では PackageLicenseFile で LICENSING.md を表示する（SPDX の式は持たない）。推移的依存は無い（packages.lock.json）。
+本リポジトリ（AGPL ＋ 商用のデュアル）の A（AGPL）では DotNetClient も AGPL で、B（商用）では組み込まれた DotNetClient を商用ライセンスに含める。
+VehicleVision.PleasanterTools の各ツールが組み込む場合は、呼び出し元と一体として扱う（LICENSING.md の「例外: 当社の共通部品 DotNetClient」、Template #114・#117）。
+
 テスト用の直接依存（配布物には含めない）:
 Microsoft.NET.Test.Sdk — MIT
 https://github.com/microsoft/vstest/blob/main/LICENSE
@@ -82,6 +89,7 @@ System.Security.Cryptography.ProtectedData 9.0.18 / MIT
 System.Threading.RateLimiting 9.0.18 / MIT
 System.ValueTuple 4.6.1 / MIT
 VehicleVision.PleasanterTools.Core.Data 0.1.1 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.DotNetClient 0.2.0 / LGPL-3.0-or-later OR AGPL-3.0-or-later OR 商用（自社）
 
 VehicleVision.PleasanterTools.Core.Data は、当社の共通部品 Core（DB の基盤）で、AGPL-3.0-or-later と商用のデュアルライセンスです
 （寛容ライセンスの例外。LICENSING.md の「例外: 当社の共通部品 Core」の節と、LICENSE-COMMERCIAL.md を参照）。
