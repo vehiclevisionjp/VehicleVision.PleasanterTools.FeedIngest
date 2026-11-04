@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
+using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.Core.Data;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
@@ -52,8 +53,8 @@ public sealed class IngestRunnerStateTests : IDisposable
     {
         var output = new StringWriter();
         var upserter = new ExternalKeyUpserter(
-            new PleasanterApiClient(
-                new HttpClient(pleasanter),
+            new PleasanterGateway(
+                pleasanter,
                 new PleasanterOptions { BaseUrl = "https://pleasanter.example.test", ApiKey = "secret-api-key" }),
             new UpsertOptions { MinInterval = TimeSpan.Zero },
             (_, _) => Task.CompletedTask);
@@ -282,9 +283,20 @@ public sealed class IngestRunnerStateTests : IDisposable
         var feeds = new IngestRunnerTests.FakeFeeds(_ => IngestRunnerTests.Xml(IngestRunnerTests.Rss(IngestRunnerTests.Item("a"))));
         var pleasanter = new IngestRunnerTests.FakePleasanter();
         // 1 回目: 作成は届いたが、結果を記録する前に落ちた状態を作る
-        pleasanter.Hook = path => path.EndsWith("/Create", StringComparison.Ordinal) ? throw new InvalidOperationException("crash") : null;
+        // （DotNetClient は取り消し以外の例外を Unknown にするため、取り消しで中断を模す）
+        using var interrupt = new CancellationTokenSource();
+        pleasanter.Hook = path =>
+        {
+            if (!path.EndsWith("/Create", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            interrupt.Cancel();
+            throw new OperationCanceledException(interrupt.Token);
+        };
         var first = Create(IngestRunnerTests.Config(), feeds, pleasanter);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => first.Runner.RunAsync(false, CancellationToken.None));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first.Runner.RunAsync(false, interrupt.Token));
         pleasanter.Hook = null;
         var entry = (await _store.ListEntriesAsync("first")).Single();
         var key = entry.ExternalKey;

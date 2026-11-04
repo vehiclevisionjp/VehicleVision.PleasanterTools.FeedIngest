@@ -399,6 +399,11 @@
           "System.Security.Cryptography.Pkcs": "10.0.14"
         }
       },
+      "VehicleVision.PleasanterTools.DotNetClient": {
+        "type": "Transitive",
+        "resolved": "0.2.0",
+        "contentHash": "s0iBREzBbK3i79Eo15LYZqwDiRTBtw5olqecHbyghr7RYFcGINQDtL31e01kg1gzqfyLaXpztc9wGxBgTfqW8g=="
+      },
       "vehiclevision.pleasantertools.feedingest.core": {
         "type": "Project"
       },
@@ -418,6 +423,7 @@
       "vehiclevision.pleasantertools.feedingest.pleasanter": {
         "type": "Project",
         "dependencies": {
+          "VehicleVision.PleasanterTools.DotNetClient": "[0.2.0, )",
           "VehicleVision.PleasanterTools.FeedIngest.Core": "[0.1.0, )"
         }
       }

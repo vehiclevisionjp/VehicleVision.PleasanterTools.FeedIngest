@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
+using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Mapping;
 
@@ -82,7 +83,7 @@ public sealed class ExternalKeyUpserter
 
     private static readonly int[] BackoffSeconds = [1, 2, 4];
 
-    private readonly PleasanterApiClient _client;
+    private readonly PleasanterGateway _client;
     private readonly UpsertOptions _options;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
     private readonly TimeProvider _time;
@@ -91,7 +92,7 @@ public sealed class ExternalKeyUpserter
     private long? _lastRequestAt;
 
     public ExternalKeyUpserter(
-        PleasanterApiClient client,
+        PleasanterGateway client,
         UpsertOptions? options = null,
         Func<TimeSpan, CancellationToken, Task>? delay = null,
         TimeProvider? time = null)
@@ -331,8 +332,8 @@ public sealed class ExternalKeyUpserter
     // 送信（同時 1・最低間隔・予算・再試行）
 
     /// <summary>読み取りを、408・429・5xx・通信断に限って再試行する。</summary>
-    private async Task<PleasanterResponse> ReadWithRetryAsync(
-        Func<Task<PleasanterResponse>> call, CancellationToken token)
+    private async Task<PleasanterResult> ReadWithRetryAsync(
+        Func<Task<PleasanterResult>> call, CancellationToken token)
     {
         for (var attempt = 0; ; attempt++)
         {
@@ -375,7 +376,7 @@ public sealed class ExternalKeyUpserter
         }
     }
 
-    private async Task<PleasanterResponse> SendAsync(Func<Task<PleasanterResponse>> call, CancellationToken token)
+    private async Task<PleasanterResult> SendAsync(Func<Task<PleasanterResult>> call, CancellationToken token)
     {
         await _gate.WaitAsync(token).ConfigureAwait(false);
         try
@@ -411,7 +412,7 @@ public sealed class ExternalKeyUpserter
         }
     }
 
-    private static void StopIfFatal(PleasanterResponse response)
+    private static void StopIfFatal(PleasanterResult response)
     {
         if (response.ErrorKind is PleasanterErrorKind.Unauthorized)
         {

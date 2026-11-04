@@ -2,7 +2,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests;
 
-public sealed class PleasanterOptionsTests
+public sealed class PleasanterEnvironmentTests
 {
     [Theory]
     [InlineData("PLEASANTER_")]
@@ -14,7 +14,7 @@ public sealed class PleasanterOptionsTests
             [prefix + "BASE_URL"] = "https://example.invalid",
             [prefix + "API_KEY"] = "test-key",
         };
-        var options = PleasanterOptions.FromEnvironment(name => variables.GetValueOrDefault(name));
+        var options = PleasanterEnvironment.FromEnvironment(name => variables.GetValueOrDefault(name));
         Assert.Equal("test-key", options.ApiKey);
         Assert.Equal("https://example.invalid", options.BaseUrl);
         Assert.Equal(1.1m, options.ApiVersion);
@@ -30,14 +30,14 @@ public sealed class PleasanterOptionsTests
             ["FEEDINGEST_PLEASANTER_API_KEY"] = "do-not-log",
         };
         var error = Assert.Throws<InvalidOperationException>(() =>
-            PleasanterOptions.FromEnvironment(name => variables.GetValueOrDefault(name)));
+            PleasanterEnvironment.FromEnvironment(name => variables.GetValueOrDefault(name)));
         Assert.DoesNotContain("do-not-log", error.ToString());
     }
 
     [Fact]
     public void checkは値とFILEの競合を拒否する()
     {
-        var error = Assert.Throws<InvalidOperationException>(() => PleasanterOptions.FromEnvironment(name => name switch
+        var error = Assert.Throws<InvalidOperationException>(() => PleasanterEnvironment.FromEnvironment(name => name switch
         {
             "PLEASANTER_BASE_URL" => "https://example.invalid",
             "PLEASANTER_API_KEY" => "do-not-log",
@@ -55,7 +55,7 @@ public sealed class PleasanterOptionsTests
     [InlineData("https://example.invalid/?secret=do-not-log")]
     public void checkの不正な接続先は送信前に拒否する(string? url)
     {
-        var error = Assert.Throws<InvalidOperationException>(() => PleasanterOptions.FromEnvironment(name => name switch
+        var error = Assert.Throws<InvalidOperationException>(() => PleasanterEnvironment.FromEnvironment(name => name switch
         {
             "PLEASANTER_BASE_URL" => url,
             "PLEASANTER_API_KEY" => "do-not-log",
@@ -86,7 +86,7 @@ public sealed class PleasanterOptionsTests
         try
         {
             File.WriteAllText(file, "test-key\n");
-            var options = PleasanterOptions.FromEnvironment(name => name switch
+            var options = PleasanterEnvironment.FromEnvironment(name => name switch
             {
                 "PLEASANTER_BASE_URL" => "https://example.invalid",
                 "PLEASANTER_API_KEY_FILE" => file,
