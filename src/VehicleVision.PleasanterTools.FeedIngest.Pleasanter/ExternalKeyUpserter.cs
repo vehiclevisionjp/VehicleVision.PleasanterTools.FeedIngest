@@ -332,8 +332,8 @@ public sealed class ExternalKeyUpserter
     // 送信（同時 1・最低間隔・予算・再試行）
 
     /// <summary>読み取りを、408・429・5xx・通信断に限って再試行する。</summary>
-    private async Task<PleasanterResult> ReadWithRetryAsync(
-        Func<Task<PleasanterResult>> call, CancellationToken token)
+    private async Task<PleasanterResponse> ReadWithRetryAsync(
+        Func<Task<PleasanterResponse>> call, CancellationToken token)
     {
         for (var attempt = 0; ; attempt++)
         {
@@ -376,7 +376,7 @@ public sealed class ExternalKeyUpserter
         }
     }
 
-    private async Task<PleasanterResult> SendAsync(Func<Task<PleasanterResult>> call, CancellationToken token)
+    private async Task<PleasanterResponse> SendAsync(Func<Task<PleasanterResponse>> call, CancellationToken token)
     {
         await _gate.WaitAsync(token).ConfigureAwait(false);
         try
@@ -412,7 +412,7 @@ public sealed class ExternalKeyUpserter
         }
     }
 
-    private static void StopIfFatal(PleasanterResult response)
+    private static void StopIfFatal(PleasanterResponse response)
     {
         if (response.ErrorKind is PleasanterErrorKind.Unauthorized)
         {
