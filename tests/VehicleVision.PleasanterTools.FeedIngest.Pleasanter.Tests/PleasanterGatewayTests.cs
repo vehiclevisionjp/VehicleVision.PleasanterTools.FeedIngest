@@ -9,7 +9,7 @@ namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests;
 
 /// <summary>
 /// DotNetClient を本ツールの組み方（<see cref="PleasanterGateway"/>）で使ったときの確認。
-/// 分類など DotNetClient 自身の挙動は DotNetClient 側のテストが持つ。ここでは組み方と、0.2.0 に無い分の補いを確かめる。
+/// 分類など DotNetClient 自身の挙動は DotNetClient 側のテストが持つ。ここでは組み方と、本文の StatusCode・Retry-After が呼び出し側へ届くことを確かめる。
 /// </summary>
 public sealed class PleasanterGatewayTests
 {
@@ -115,14 +115,14 @@ public sealed class PleasanterGatewayTests
         Assert.Equal(expected, response.ErrorKind);
         Assert.False(response.IsSuccess);
         Assert.Equal(200, response.StatusCode);
-        Assert.Equal(apiStatus, response.ApiStatusCode);
+        Assert.Equal(apiStatus, response.ApplicationStatusCode);
     }
 
     [Fact]
     public async Task 本文に_StatusCode_が無い_200_は成功のまま()
     {
         using var gateway = new PleasanterGateway(
-            new StubHandler(HttpStatusCode.OK, """{"Id":"42"}"""), OptionsFor("https://example.invalid"));
+            new StubHandler(HttpStatusCode.OK, """{"Id":42}"""), OptionsFor("https://example.invalid"));
 
         var response = await gateway.CreateAsync(1, new Dictionary<string, object?>());
 
@@ -148,6 +148,24 @@ public sealed class PleasanterGatewayTests
         Assert.Equal(TimeSpan.FromSeconds(30), seconds.RetryAfter);
         Assert.InRange(date.RetryAfter!.Value, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
         Assert.Null(none.RetryAfter);
+    }
+
+    [Theory]
+    [InlineData("-5", null)]
+    [InlineData("0", 0)]
+    [InlineData("Wed, 21 Oct 2015 07:28:00 GMT", 0)]
+    [InlineData("abc", null)]
+    [InlineData("", null)]
+    [InlineData("3600", 3600)]
+    public async Task Retry_After_の0_過去_不正_長い待機を従来どおり扱う(string raw, int? expectedSeconds)
+    {
+        var handler = new StubHandler(HttpStatusCode.ServiceUnavailable) { RawRetryAfter = raw };
+        using var gateway = new PleasanterGateway(handler, OptionsFor("https://example.invalid"));
+
+        var response = await gateway.GetPageAsync(1, new Dictionary<string, object?>(), 0);
+
+        // 丸めは DotNetClient ではしない（上限は呼び出し側の MaxRetryAfter が判断する）
+        Assert.Equal(expectedSeconds is { } s ? TimeSpan.FromSeconds(s) : null, response.RetryAfter);
     }
 
     [Fact]
@@ -188,6 +206,9 @@ public sealed class PleasanterGatewayTests
 
         public RetryConditionHeaderValue? RetryAfter { get; set; }
 
+        /// <summary>そのまま載せる Retry-After の生の値（負・不正の確認用）。</summary>
+        public string? RawRetryAfter { get; set; }
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -205,6 +226,11 @@ public sealed class PleasanterGatewayTests
                 Content = new StringContent(body, Encoding.UTF8, "application/json"),
             };
             response.Headers.RetryAfter = RetryAfter;
+            if (RawRetryAfter is not null)
+            {
+                response.Headers.TryAddWithoutValidation("Retry-After", RawRetryAfter);
+            }
+
             return response;
         }
     }
