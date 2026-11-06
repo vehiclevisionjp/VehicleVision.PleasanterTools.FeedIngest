@@ -749,4 +749,29 @@ public sealed class ExternalKeyUpserterTests
         Assert.Equal(7, result.RecordId);
         Assert.Equal(0, server.Count("Create"));
     }
+
+    [Fact]
+    public async Task 作成の照合が回数制限で終わったら_次回に回さず未確認として保留する()
+    {
+        var created = false;
+        var server = new FakePleasanter
+        {
+            Hook = (path, _, _) =>
+            {
+                if (path.EndsWith("/Create", StringComparison.Ordinal))
+                {
+                    created = true;
+                    return Status(HttpStatusCode.BadGateway);
+                }
+
+                return created ? Status(HttpStatusCode.TooManyRequests, TimeSpan.FromMinutes(5)) : null;
+            },
+        };
+        var (upserter, _) = Create(server);
+
+        var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert);
+
+        Assert.Equal(UpsertOutcome.CreateUnconfirmed, result.Outcome);
+        Assert.Equal(1, server.Count("Create"));
+    }
 }
