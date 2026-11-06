@@ -186,6 +186,11 @@ public sealed class ExternalKeyUpserter
             {
                 return Unconfirmed("作成結果を確認できないまま、API の予算を使い切りました。");
             }
+            catch (StopException stop) when (stop.Result.Outcome is UpsertOutcome.RateLimited)
+            {
+                // Create は送った後。回数制限で照合できないので、未確認として残す（次回、Create を再送しない）
+                return Unconfirmed("作成結果を確認できないまま、回数制限で照合できませんでした。");
+            }
             catch (LookupFailedException)
             {
                 // 読み直せなかった。0 件とは解釈せず、次の照合へ進む
