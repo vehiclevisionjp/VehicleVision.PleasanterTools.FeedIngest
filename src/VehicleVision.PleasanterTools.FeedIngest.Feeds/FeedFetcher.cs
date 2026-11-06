@@ -25,38 +25,73 @@ public sealed class FeedFetcher : IDisposable
     private readonly FeedFetchOptions _options;
     private readonly Func<string, CancellationToken, Task<IPAddress[]>> _resolver;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
+    private readonly DestinationPolicy _policy;
+    private readonly HttpMessageHandler? _ownedHandler;
 
     /// <param name="handler">通信を行うハンドラー。試験では差し替える。本番は <see cref="CreateDefaultHandler"/>。</param>
     /// <param name="options">上限。</param>
     /// <param name="resolver">事前の宛先検査に使う名前解決。省略時は DNS。</param>
     /// <param name="delay">再試行の待機。省略時は実際に待つ。試験は実時間を待たない。</param>
+    /// <param name="policy">この取得だけに効く宛先の方針。省略時は許可リストなし（内部・予約宛を常に拒否）。</param>
     public FeedFetcher(
         HttpMessageHandler handler,
         FeedFetchOptions? options = null,
         Func<string, CancellationToken, Task<IPAddress[]>>? resolver = null,
-        Func<TimeSpan, CancellationToken, Task>? delay = null)
+        Func<TimeSpan, CancellationToken, Task>? delay = null,
+        DestinationPolicy? policy = null)
+        : this(handler, null, options, resolver, delay, policy)
+    {
+    }
+
+    private FeedFetcher(
+        HttpMessageHandler handler,
+        HttpMessageHandler? ownedHandler,
+        FeedFetchOptions? options,
+        Func<string, CancellationToken, Task<IPAddress[]>>? resolver,
+        Func<TimeSpan, CancellationToken, Task>? delay,
+        DestinationPolicy? policy)
     {
         ArgumentNullException.ThrowIfNull(handler);
         _options = options ?? new FeedFetchOptions();
         _client = new HttpClient(handler, disposeHandler: false) { Timeout = Timeout.InfiniteTimeSpan };
         _resolver = resolver ?? DefaultResolver;
         _delay = delay ?? ((span, token) => Task.Delay(span, token));
+        _policy = policy ?? DestinationPolicy.Default;
+        _ownedHandler = ownedHandler;
     }
 
-    public void Dispose() => _client.Dispose();
+    /// <summary>
+    /// 本番用。<paramref name="policy"/>（source の許可リスト）を接続時の検査へ結び付けた専用のハンドラーを作り、
+    /// このインスタンスが所有する。接続のプールを source 間で共有しないので、許可が他の source へ漏れない。
+    /// </summary>
+    public static FeedFetcher CreateDefault(FeedFetchOptions options, DestinationPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        var handler = CreateDefaultHandler(policy);
+        return new FeedFetcher(handler, handler, options, null, null, policy);
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _ownedHandler?.Dispose();
+    }
 
     /// <summary>
     /// 本番用のハンドラー。自動リダイレクト・Cookie・プロキシ・自動展開を使わず、接続時に宛先を検査して
     /// 検査したアドレスへだけ接続する（名前解決の差し替えによる回避を防ぐ）。TLS 検証は既定のまま。
     /// </summary>
-    public static SocketsHttpHandler CreateDefaultHandler() => new()
+    public static SocketsHttpHandler CreateDefaultHandler() => CreateDefaultHandler(DestinationPolicy.Default);
+
+    /// <summary>接続時の宛先検査に <paramref name="policy"/> を使うハンドラー。</summary>
+    public static SocketsHttpHandler CreateDefaultHandler(DestinationPolicy policy) => new()
     {
         AllowAutoRedirect = false,
         UseCookies = false,
         UseProxy = false,
         AutomaticDecompression = DecompressionMethods.None,
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-        ConnectCallback = ConnectGuardedAsync,
+        ConnectCallback = (context, token) => ConnectGuardedAsync(context, policy, token),
     };
 
     /// <summary>フィードを取得する。</summary>
@@ -155,7 +190,7 @@ public sealed class FeedFetcher : IDisposable
     private async Task<Hop> SendWithRetryAsync(
         Uri url, List<(string Name, string Value)> credentials, FeedValidators? validators, CancellationToken total)
     {
-        await DestinationGuard.ResolveAllowedAsync(url.IdnHost, _resolver, total).ConfigureAwait(false);
+        await DestinationGuard.ResolveAllowedAsync(url.IdnHost, _resolver, _policy, total).ConfigureAwait(false);
 
         for (var attempt = 0; ; attempt++)
         {
@@ -450,10 +485,10 @@ public sealed class FeedFetcher : IDisposable
         => await Dns.GetHostAddressesAsync(host, token).ConfigureAwait(false);
 
     private static async ValueTask<Stream> ConnectGuardedAsync(
-        SocketsHttpConnectionContext context, CancellationToken token)
+        SocketsHttpConnectionContext context, DestinationPolicy policy, CancellationToken token)
     {
         var addresses = await DestinationGuard
-            .ResolveAllowedAsync(context.DnsEndPoint.Host, DefaultResolver, token).ConfigureAwait(false);
+            .ResolveAllowedAsync(context.DnsEndPoint.Host, DefaultResolver, policy, token).ConfigureAwait(false);
         SocketException? last = null;
         foreach (var address in addresses)
         {

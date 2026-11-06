@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -146,10 +147,12 @@ public static partial class ConfigurationReader
 
     private static HttpConfiguration ReadHttp(Node http)
     {
-        http.Object("timeoutSeconds", "maxRedirects", "maxBodyBytes", "authentication");
+        http.Object("timeoutSeconds", "maxRedirects", "maxBodyBytes", "authentication", "allowedNetworks", "allowedHosts");
         var timeout = http.Optional("timeoutSeconds")?.Integer(1, 30) ?? 30;
         var redirects = http.Optional("maxRedirects")?.Integer(0, 5) ?? 5;
         var body = http.Optional("maxBodyBytes")?.Integer(1, 10485760) ?? 10485760;
+        var networks = ReadAllowedNetworks(http.Optional("allowedNetworks"));
+        var hosts = ReadAllowedHosts(http.Optional("allowedHosts"));
         var auth = http.Required("authentication");
         auth.Object("type", "usernameEnv", "passwordEnv", "headers");
         var kind = auth.Required("type").Choice<AuthenticationKind>("none", "basic", "headers");
@@ -188,7 +191,43 @@ public static partial class ConfigurationReader
                 break;
         }
         return new HttpConfiguration((int)timeout, (int)redirects, (int)body,
-            new AuthenticationConfiguration(kind, username, password, headers.AsReadOnly()));
+            new AuthenticationConfiguration(kind, username, password, headers.AsReadOnly()), networks, hosts);
+    }
+
+    private static IReadOnlyList<IPNetwork> ReadAllowedNetworks(Node? node)
+    {
+        var result = new List<IPNetwork>();
+        foreach (var item in node?.Array() ?? [])
+        {
+            if (!DestinationRules.TryParseNetwork(item.Text(), out var network, out var reason))
+            {
+                throw item.Error(reason);
+            }
+            if (result.Contains(network))
+            {
+                throw item.Error("範囲が重複しています。");
+            }
+            result.Add(network);
+        }
+        return result.AsReadOnly();
+    }
+
+    private static IReadOnlyList<string> ReadAllowedHosts(Node? node)
+    {
+        var result = new List<string>();
+        foreach (var item in node?.Array() ?? [])
+        {
+            if (!DestinationRules.TryNormalizeHost(item.Text(), out var host))
+            {
+                throw item.Error("ホスト名（または IP アドレス）だけを書いてください。スキーム・ポート・パス・ワイルドカードは使えません。");
+            }
+            if (result.Contains(host, StringComparer.Ordinal))
+            {
+                throw item.Error("ホストが重複しています。");
+            }
+            result.Add(host);
+        }
+        return result.AsReadOnly();
     }
 
     private static bool IsReservedHeader(string name) =>
