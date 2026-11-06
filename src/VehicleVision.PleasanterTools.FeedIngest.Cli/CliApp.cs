@@ -135,6 +135,25 @@ public static class CliApp
         }
     }
 
+    /// <summary>
+    /// 内部ホストの許可リスト（U11）が設定されていれば、警告を 1 行だけ出す。許可の範囲・ホスト名は出さず、件数だけにする。
+    /// </summary>
+    private static void WarnAllowedDestinations(FeedIngestConfiguration configuration, TextWriter error)
+    {
+        var sources = configuration.Sources
+            .Where(source => source.Http.AllowedNetworks.Count > 0 || source.Http.AllowedHosts.Count > 0)
+            .ToList();
+        if (sources.Count == 0)
+        {
+            return;
+        }
+
+        error.WriteLine(
+            $"Warning: {sources.Count} source(s) allow internal destinations "
+            + $"({sources.Sum(source => source.Http.AllowedNetworks.Count)} network(s), "
+            + $"{sources.Sum(source => source.Http.AllowedHosts.Count)} host(s)). Keep the lists minimal.");
+    }
+
     private static async Task<int> IngestAsync(
         string[] args, TextWriter output, TextWriter error, Func<string, string?>? environment, CancellationToken token)
     {
@@ -183,7 +202,7 @@ public static class CliApp
         PleasanterGateway? gateway = null;
         try
         {
-            using var feedHandler = FeedFetcher.CreateDefaultHandler();
+            WarnAllowedDestinations(configuration, error);
             ExternalKeyUpserter? upserter = null;
             IIngestStateStore? stateStore = null;
             if (!dryRun)
@@ -211,14 +230,15 @@ public static class CliApp
 
             var runner = new IngestRunner(
                 configuration,
-                source => new FeedFetcher(
-                    feedHandler,
+                // source ごとに、その source の許可リストを結び付けた取得器を作る（許可は他の source へ効かない）
+                source => FeedFetcher.CreateDefault(
                     new FeedFetchOptions
                     {
                         RequestTimeout = TimeSpan.FromSeconds(source.Http.TimeoutSeconds),
                         MaxRedirects = source.Http.MaxRedirects,
                         MaxBodyBytes = source.Http.MaxBodyBytes,
-                    }),
+                    },
+                    DestinationPolicy.From(source.Http)),
                 upserter,
                 environment,
                 output,
