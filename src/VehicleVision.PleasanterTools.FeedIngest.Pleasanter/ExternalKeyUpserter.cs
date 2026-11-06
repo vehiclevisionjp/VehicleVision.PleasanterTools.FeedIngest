@@ -21,8 +21,14 @@ public enum UpsertOutcome
     /// <summary>createOnly で既存があったので触らなかった。</summary>
     SkippedExisting,
 
-    /// <summary>人の判断まで保留（外部キーが複数件・作成結果を確認できない・更新を確認できない）。</summary>
+    /// <summary>人の判断まで保留（外部キーが複数件・更新を確認できない）。</summary>
     Held,
+
+    /// <summary>
+    /// 作成が適用されたか確認できない（元の要求が処理中で、後から作成され得る）ので、Create を再送せず保留した。
+    /// 運用者が未適用を確認してから、明示して再実行する。
+    /// </summary>
+    CreateUnconfirmed,
 
     /// <summary>設定・権限・検証の誤りで、再送しても通らない。検索を完走できなかった場合も含む。</summary>
     Failed,
@@ -107,13 +113,17 @@ public sealed class ExternalKeyUpserter
     /// <summary>これまでに送った API 要求の数。</summary>
     public int RequestCount => _requests;
 
+    /// <param name="allowCreate">
+    /// <c>false</c> なら、外部キーの検索が 0 件でも Create しない（<see cref="UpsertOutcome.CreateUnconfirmed"/>）。
+    /// 前回、作成の結果が確認できなかった配送に使う（0 件だけを根拠に Create を再送しない）。
+    /// </param>
     public async Task<UpsertResult> UpsertAsync(
-        long siteId, MappedRecord record, TargetMode mode, CancellationToken cancellationToken = default)
+        long siteId, MappedRecord record, TargetMode mode, bool allowCreate = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(record);
         try
         {
-            return await UpsertCoreAsync(siteId, record, mode, cancellationToken).ConfigureAwait(false);
+            return await UpsertCoreAsync(siteId, record, mode, allowCreate, cancellationToken).ConfigureAwait(false);
         }
         catch (StopException stop)
         {
@@ -126,7 +136,7 @@ public sealed class ExternalKeyUpserter
     }
 
     private async Task<UpsertResult> UpsertCoreAsync(
-        long siteId, MappedRecord record, TargetMode mode, CancellationToken token)
+        long siteId, MappedRecord record, TargetMode mode, bool allowCreate, CancellationToken token)
     {
         var lookup = await LookupAsync(siteId, record, token).ConfigureAwait(false);
         switch (lookup.Matches.Count)
@@ -135,6 +145,12 @@ public sealed class ExternalKeyUpserter
                 return new UpsertResult(UpsertOutcome.Held, null, "同じ外部キーのレコードが複数あります。人が解決するまで保留します。");
             case 1:
                 return await ExistingAsync(siteId, record, mode, lookup.Matches[0], token).ConfigureAwait(false);
+        }
+
+        if (!allowCreate)
+        {
+            return Unconfirmed("前回、作成の結果を確認できませんでした。検索が 0 件でも Create を再送せず保留します。"
+                + "運用者が未適用を確認してから明示的に再実行してください。");
         }
 
         var create = await SendAsync(
@@ -168,7 +184,12 @@ public sealed class ExternalKeyUpserter
             }
             catch (StopException stop) when (stop.Result.Outcome is UpsertOutcome.BudgetExhausted)
             {
-                return Pending("作成結果を確認できないまま、API の予算を使い切りました。");
+                return Unconfirmed("作成結果を確認できないまま、API の予算を使い切りました。");
+            }
+            catch (StopException stop) when (stop.Result.Outcome is UpsertOutcome.RateLimited)
+            {
+                // Create は送った後。回数制限で照合できないので、未確認として残す（次回、Create を再送しない）
+                return Unconfirmed("作成結果を確認できないまま、回数制限で照合できませんでした。");
             }
             catch (LookupFailedException)
             {
@@ -190,7 +211,7 @@ public sealed class ExternalKeyUpserter
             }
         }
 
-        return Pending(
+        return Unconfirmed(
             "作成の結果を確認できません。元の要求が処理中の可能性があるため、Create を再送せず保留します。"
             + "運用者が未適用を確認してから明示的に再実行してください。");
     }
@@ -199,6 +220,8 @@ public sealed class ExternalKeyUpserter
         => TimeSpan.FromSeconds(BackoffSeconds[Math.Min(attempt, BackoffSeconds.Length - 1)]);
 
     private static UpsertResult Pending(string reason) => new(UpsertOutcome.Held, null, reason);
+
+    private static UpsertResult Unconfirmed(string reason) => new(UpsertOutcome.CreateUnconfirmed, null, reason);
 
     private async Task<UpsertResult> ExistingAsync(
         long siteId, MappedRecord record, TargetMode mode, Row existing, CancellationToken token)

@@ -43,6 +43,8 @@ public sealed class CliAppTests
     [InlineData("ingest", "--dry-run")]
     [InlineData("ingest", "--config", "a.json", "--config", "b.json")]
     [InlineData("ingest", "--config", "a.json", "--unknown")]
+    [InlineData("ingest", "--config", "a.json", "--dry-run", "--resend-unconfirmed")]
+    [InlineData("ingest", "--config", "a.json", "--resend-unconfirmed", "--resend-unconfirmed")]
     public async Task 使い方の誤りは終了コード2で使い方を出す(params string[] args)
     {
         var (code, _, error) = await RunAsync(args);
