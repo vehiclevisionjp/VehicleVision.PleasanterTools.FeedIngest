@@ -27,6 +27,15 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 ```
 
 設定ファイルの形は [対応づけ設定](_documents/対応づけ設定.md) を参照してください（秘密は環境変数名で参照します）。
+定期実行へ登録する前に、通信せずに設定ファイルを検証できます（状態 DB にも Pleasanter にも触れません）。
+
+```powershell
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- validate --config feedingest.json
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- validate --config feedingest.json --check-secrets
+```
+
+`--check-secrets` は、設定が参照する秘密（環境変数・`_FILE`）が解決できることだけを確かめます（変数名だけを報告し、値・パスは出しません）。
+成功は終了コード 0、設定の誤り・読めない・使い方の誤りは 2 です。出力は取り込み元の ID・siteId・mode・対応づけ件数だけです。
 `--dry-run` は Pleasanter へ接続せず、取得・解析・対応づけまでを確認します。
 終了コードは 0＝全対象が成功または変更なし、1＝一部でも保留・失敗・未処理、2＝使い方・設定の誤り、130＝中断です。
 出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。
