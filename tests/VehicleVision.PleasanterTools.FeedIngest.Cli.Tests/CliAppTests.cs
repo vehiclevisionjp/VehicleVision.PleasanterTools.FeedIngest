@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace VehicleVision.PleasanterTools.FeedIngest.Cli.Tests;
 
 public sealed class CliAppTests
@@ -37,6 +39,11 @@ public sealed class CliAppTests
     [InlineData("check", "extra")]
     [InlineData("migrate", "extra")]
     [InlineData("unlock", "extra")]
+    [InlineData("validate")]
+    [InlineData("validate", "--check-secrets")]
+    [InlineData("validate", "--config")]
+    [InlineData("validate", "--config", "a.json", "--config", "b.json")]
+    [InlineData("validate", "--config", "a.json", "--dry-run")]
     [InlineData("ingest")]
     [InlineData("ingest", "--config")]
     [InlineData("ingest", "--dry-run")]
@@ -301,5 +308,120 @@ public sealed class CliAppTests
         var (code, _, _) = await RunAsync(["check"], _ => null);
 
         Assert.Equal(2, code);
+    }
+
+    [Fact]
+    public async Task validateは通信せずに概要だけを出して終了コード0()
+    {
+        var path = WriteConfig(ValidConfig);
+        try
+        {
+            var (code, output, error) = await RunAsync(["validate", "--config", path]);
+
+            Assert.Equal(0, code);
+            Assert.Empty(error);
+            Assert.Contains("source=news site=1 mode=Upsert mappings=1", output, StringComparison.Ordinal);
+            Assert.Contains("[OK] Configuration is valid (1 source(s)).", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("example.test", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("Secrets are resolved", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task validateは設定の誤りを行とキーで結果としてstdoutへ出し終了コード1()
+    {
+        var path = WriteConfig(ValidConfig.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 2", StringComparison.Ordinal));
+        try
+        {
+            var (code, output, error) = await RunAsync(["validate", "--config", path]);
+
+            Assert.Equal(1, code);
+            Assert.Contains("[ConfigurationInvalid]", output, StringComparison.Ordinal);
+            Assert.Contains("key $.schemaVersion", output, StringComparison.Ordinal);
+            Assert.Empty(error);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task validateのjsonは検査の失敗を枠で出す()
+    {
+        var path = WriteConfig(ValidConfig.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 2", StringComparison.Ordinal));
+        try
+        {
+            var (code, output, _) = await RunAsync(["validate", "--config", path, "--json"]);
+
+            Assert.Equal(1, code);
+            using var document = JsonDocument.Parse(output);
+            var root = document.RootElement;
+            Assert.Equal("validate", root.GetProperty("command").GetString());
+            Assert.False(root.GetProperty("ok").GetBoolean());
+            Assert.Equal("ConfigurationInvalid", root.GetProperty("errors")[0].GetProperty("code").GetString());
+            Assert.Equal("$.schemaVersion", root.GetProperty("errors")[0].GetProperty("path").GetString());
+            Assert.Equal(JsonValueKind.Null, root.GetProperty("checked").GetProperty("sources").ValueKind);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task validateは設定ファイルが読めなければパスを出さず終了コード2()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "no-such-dir-feedingest", "secret-name.json");
+
+        var (code, output, error) = await RunAsync(["validate", "--config", path]);
+
+        Assert.Equal(2, code);
+        Assert.Empty(output);
+        Assert.Contains("Cannot read the configuration file.", error, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-name", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task validateのcheck_secretsは参照する秘密が解決できなければ変数名だけを示し終了コード1()
+    {
+        var path = WriteConfig(ValidConfig);
+        try
+        {
+            var (code, output, error) = await RunAsync(["validate", "--config", path, "--check-secrets"]);
+
+            Assert.Equal(1, code);
+            Assert.Contains("[SecretUnresolved]", output, StringComparison.Ordinal);
+            Assert.Contains("FEEDINGEST_TEST_API_KEY", output, StringComparison.Ordinal);
+            Assert.Empty(error);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task validateのcheck_secretsは解決できれば値を出さず終了コード0()
+    {
+        var path = WriteConfig(ValidConfig);
+        try
+        {
+            var (code, output, error) = await RunAsync(
+                ["validate", "--config", path, "--check-secrets", "--json"],
+                name => name == "FEEDINGEST_TEST_API_KEY" ? "value-that-must-not-appear" : null);
+
+            Assert.Equal(0, code);
+            Assert.Contains("\"secrets\":true", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("value-that-must-not-appear", output + error, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

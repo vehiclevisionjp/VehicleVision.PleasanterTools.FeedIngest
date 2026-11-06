@@ -27,11 +27,13 @@ public static class CliApp
     public const string MigrateCommand = "migrate";
     public const string MigrateStatusCommand = "migrate-status";
     public const string UnlockCommand = "unlock";
+    public const string ValidateCommand = "validate";
 
     // 固有の ErrorCodes（--json の errors[].code）
     private const string ConnectionFailedCode = "ConnectionFailed";
     private const string ConfigurationInvalidCode = "ConfigurationInvalid";
     private const string ConfigurationUnreadableCode = "ConfigurationUnreadable";
+    private const string SecretUnresolvedCode = "SecretUnresolved";
     private const string StateDatabaseNotMigratedCode = "StateDatabaseNotMigrated";
     private const string StateDatabaseFailedCode = "StateDatabaseFailed";
     private const string MigrationsPendingCode = "MigrationsPending";
@@ -56,6 +58,12 @@ public static class CliApp
         Description = "Fetch, parse and map only. Connect to neither Pleasanter nor the state database.",
     };
 
+    private static readonly OptionSpec CheckSecretsOption = new()
+    {
+        Name = "check-secrets",
+        Description = "Also check that the secrets the configuration refers to (environment variables, _FILE) can be resolved. Only variable names are reported.",
+    };
+
     private static readonly OptionSpec ResendUnconfirmedOption = new()
     {
         Name = "resend-unconfirmed",
@@ -69,6 +77,7 @@ public static class CliApp
         [
             new CommandSpec(CheckCommand, "Check the connection to Pleasanter.", [StandardOptions.Json]),
             new CommandSpec(IngestCommand, "Ingest the feeds described in a configuration file.", [ConfigOption, DryRunOption, ResendUnconfirmedOption, StandardOptions.Json]),
+            new CommandSpec(ValidateCommand, "Validate a configuration file. No connection is made and the state database is not touched.", [ConfigOption, CheckSecretsOption, StandardOptions.Json]),
             new CommandSpec(MigrateCommand, "Apply the pending migrations to the state database.", []),
             new CommandSpec(MigrateStatusCommand, "Show the pending migrations (exit code 1 if any).", [StandardOptions.Json]),
             new CommandSpec(UnlockCommand, "Release a run lock left by an abnormal exit (only when no other run is active).", []),
@@ -79,6 +88,7 @@ public static class CliApp
     {
         [CheckCommand] = CheckAsync,
         [IngestCommand] = IngestAsync,
+        [ValidateCommand] = ValidateAsync,
         [MigrateCommand] = (context, token) => MigrateAsync(context, MigrationCommand.ApplyArgument, token),
         [MigrateStatusCommand] = MigrateStatusAsync,
         [UnlockCommand] = UnlockAsync,
@@ -263,6 +273,134 @@ public static class CliApp
         }
     }
 
+    /// <summary>
+    /// 設定ファイルを読んで検証する。誤りなら <c>Invalid</c>（行とキーつき）、読めないなら <c>Unreadable</c>（パスやシステムの文言は含めない）に入れる。
+    /// <c>ingest</c> と <c>validate</c> が同じ読み方をする。
+    /// </summary>
+    private static async Task<(FeedIngestConfiguration? Configuration, ConfigurationException? Invalid, string? Unreadable)> ReadConfigurationAsync(
+        string path, CancellationToken token)
+    {
+        try
+        {
+            return (ConfigurationReader.Parse(await File.ReadAllTextAsync(path, token).ConfigureAwait(false)), null, null);
+        }
+        catch (ConfigurationException ex)
+        {
+            return (null, ex, null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return (null, null, "Cannot read the configuration file.");
+        }
+    }
+
+    /// <summary>設定が参照する秘密（API キー・認証の利用者名・パスワード・ヘッダー値）。</summary>
+    private static IEnumerable<SecretReference> SecretsOf(FeedIngestConfiguration configuration)
+    {
+        yield return configuration.Pleasanter.ApiKey;
+        foreach (var authentication in configuration.Sources.Select(source => source.Http.Authentication))
+        {
+            if (authentication.Username is not null)
+            {
+                yield return authentication.Username;
+            }
+
+            if (authentication.Password is not null)
+            {
+                yield return authentication.Password;
+            }
+
+            foreach (var header in authentication.Headers)
+            {
+                yield return header.Value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 設定ファイルを通信せずに検証する（状態 DB にも Pleasanter にも触れない）。見つかった問題は結果なので stdout へ出す。
+    /// 検査を始められない（ファイルが読めない）は 2、始められて問題ありは 1、問題なしは 0。
+    /// <c>--check-secrets</c> は、参照する秘密が解決できることだけを確かめる（環境変数名だけ報告し、値・パスは出さない）。
+    /// </summary>
+    private static async Task<int> ValidateAsync(CommandContext context, CancellationToken token)
+    {
+        var json = context.Options.Flag(StandardOptions.JsonName);
+        var checkSecrets = context.Options.Flag(CheckSecretsOption.Name);
+        var path = context.Options.Value(ConfigOption.Name)!;
+        var (configuration, invalid, unreadable) = await ReadConfigurationAsync(path, token).ConfigureAwait(false);
+        if (unreadable is not null)
+        {
+            return Fail(context, ValidateCommand, json, ExitCodeValues.UsageError, ConfigurationUnreadableCode, unreadable);
+        }
+
+        var issues = new List<CliIssue>();
+        if (invalid is not null)
+        {
+            issues.Add(new CliIssue(ConfigurationInvalidCode, invalid.Message, invalid.Key));
+        }
+        else if (checkSecrets)
+        {
+            foreach (var secret in SecretsOf(configuration!))
+            {
+                try
+                {
+                    _ = secret.Resolve(context.GetEnvironmentVariable);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // 文言にはキー名（環境変数名）だけが含まれる
+                    issues.Add(new CliIssue(SecretUnresolvedCode, ex.Message));
+                }
+            }
+        }
+
+        var exitCode = issues.Count > 0 ? ExitCodeValues.Failure : ExitCodeValues.Success;
+        if (json)
+        {
+            context.Output.WriteJson(
+                ValidateCommand,
+                exitCode == ExitCodeValues.Success,
+                exitCode,
+                issues,
+                [],
+                writer =>
+                {
+                    writer.WriteStartObject("checked");
+                    if (configuration is null)
+                    {
+                        writer.WriteNull("sources");
+                    }
+                    else
+                    {
+                        writer.WriteNumber("sources", configuration.Sources.Count);
+                    }
+
+                    writer.WriteBoolean("secrets", checkSecrets && invalid is null);
+                    writer.WriteEndObject();
+                });
+            return exitCode;
+        }
+
+        foreach (var issue in issues)
+        {
+            context.Output.Result($"error [{issue.Code}] {issue.Message}");
+        }
+
+        if (issues.Count > 0)
+        {
+            context.Output.Result($"Configuration is invalid ({issues.Count} error(s)).");
+            return exitCode;
+        }
+
+        foreach (var source in configuration!.Sources)
+        {
+            context.Output.Result($"source={source.Id} site={source.Target.SiteId} mode={source.Target.Mode} mappings={source.Mapping.Count}");
+        }
+
+        context.Output.Ok($"Configuration is valid ({configuration.Sources.Count} source(s)).{(checkSecrets ? " Secrets are resolved." : string.Empty)} No connection was made.");
+        return exitCode;
+    }
+
     private static async Task<int> IngestAsync(CommandContext context, CancellationToken token)
     {
         var json = context.Options.Flag(StandardOptions.JsonName);
@@ -277,20 +415,12 @@ public static class CliApp
                 "--resend-unconfirmed cannot be combined with --dry-run. Try --help for usage.");
         }
 
-        FeedIngestConfiguration configuration;
-        try
+        var (configuration, invalid, unreadable) = await ReadConfigurationAsync(path, token).ConfigureAwait(false);
+        if (configuration is null)
         {
-            configuration = ConfigurationReader.Parse(await File.ReadAllTextAsync(path, token).ConfigureAwait(false));
-        }
-        catch (ConfigurationException ex)
-        {
-            return Fail(context, IngestCommand, json, ExitCodeValues.UsageError, ConfigurationInvalidCode, ex.Message);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-        {
-            // パスやシステムのメッセージは出さない
-            return Fail(
-                context, IngestCommand, json, ExitCodeValues.UsageError, ConfigurationUnreadableCode, "Cannot read the configuration file.");
+            return invalid is not null
+                ? Fail(context, IngestCommand, json, ExitCodeValues.UsageError, ConfigurationInvalidCode, invalid.Message)
+                : Fail(context, IngestCommand, json, ExitCodeValues.UsageError, ConfigurationUnreadableCode, unreadable!);
         }
 
         PleasanterGateway? gateway = null;
