@@ -49,7 +49,7 @@ public sealed class IngestRunnerStateTests : IDisposable
     }
 
     private Run Create(FeedIngestConfiguration config, IngestRunnerTests.FakeFeeds feeds, IngestRunnerTests.FakePleasanter pleasanter,
-        IIngestStateStore? state = null)
+        IIngestStateStore? state = null, bool resendUnconfirmed = false)
     {
         var output = new StringWriter();
         var upserter = new ExternalKeyUpserter(
@@ -72,7 +72,8 @@ public sealed class IngestRunnerStateTests : IDisposable
                 null,
                 output,
                 state ?? _store,
-                "test-owner"),
+                "test-owner",
+                resendUnconfirmed: resendUnconfirmed),
         };
     }
 
@@ -368,5 +369,133 @@ public sealed class IngestRunnerStateTests : IDisposable
         Assert.DoesNotContain("secret-guid", text, StringComparison.Ordinal);
         Assert.DoesNotContain("秘密の題名", text, StringComparison.Ordinal);
         Assert.DoesNotContain("secret-api-key", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>Create の応答が不明のまま、元の要求も適用されていない状態（作成が未確認）を作る。</summary>
+    private async Task<(IngestRunnerTests.FakeFeeds Feeds, IngestRunnerTests.FakePleasanter Pleasanter, string Key)> UnconfirmedCreateAsync()
+    {
+        var feeds = new IngestRunnerTests.FakeFeeds(_ => IngestRunnerTests.Xml(IngestRunnerTests.Rss(IngestRunnerTests.Item("a"))));
+        var pleasanter = new IngestRunnerTests.FakePleasanter
+        {
+            Hook = path => path.EndsWith("/Create", StringComparison.Ordinal) ? new HttpResponseMessage(HttpStatusCode.BadGateway) : null,
+        };
+        var report = await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+        Assert.Equal(1, report.Sources[0].Unconfirmed);
+        Assert.Equal(1, report.Sources[0].Held);
+        Assert.Equal(1, report.ExitCode);
+        pleasanter.Hook = null;
+        var key = (await _store.ListEntriesAsync("first")).Single().ExternalKey;
+        var delivery = (await _store.GetDeliveryAsync("office", 111, key))!;
+        Assert.Equal(DeliveryState.Held, delivery.State);
+        Assert.Equal("CreateUnconfirmed", delivery.LastOutcome);
+        return (feeds, pleasanter, key);
+    }
+
+    [Fact]
+    public async Task 作成が未確認のまま次の実行でも_検索が0件ならCreateを再送せず保留のまま()
+    {
+        var (feeds, pleasanter, key) = await UnconfirmedCreateAsync();
+        var createsBefore = pleasanter.Paths.Count(path => path.EndsWith("/Create", StringComparison.Ordinal));
+
+        var second = Create(IngestRunnerTests.Config(), feeds, pleasanter);
+        var report = await second.Runner.RunAsync(false, CancellationToken.None);
+
+        Assert.Equal(createsBefore, pleasanter.Paths.Count(path => path.EndsWith("/Create", StringComparison.Ordinal)));
+        Assert.Empty(pleasanter.Rows);
+        Assert.Equal(1, report.Sources[0].Unconfirmed);
+        Assert.Equal(1, report.ExitCode);
+        Assert.Contains("unconfirmed=1", second.Output.ToString(), StringComparison.Ordinal);
+        Assert.Equal("CreateUnconfirmed", (await _store.GetDeliveryAsync("office", 111, key))!.LastOutcome);
+    }
+
+    [Fact]
+    public async Task 作成が未確認でも_元の要求が遅れて適用されていれば照合で完了し_二重に作らない()
+    {
+        var (feeds, pleasanter, key) = await UnconfirmedCreateAsync();
+        pleasanter.Rows.Add(new JsonObject
+        {
+            ["SiteId"] = 111, ["ResultId"] = 500, ["Title"] = "題名",
+            ["ClassHash"] = new JsonObject { ["ClassZ"] = key, ["ClassA"] = "https://news.example.test/a" },
+        });
+
+        var report = await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+
+        Assert.Equal(0, report.Sources[0].Unconfirmed);
+        Assert.Single(pleasanter.Rows);
+        var delivery = (await _store.GetDeliveryAsync("office", 111, key))!;
+        Assert.Equal(DeliveryState.Succeeded, delivery.State);
+        Assert.Equal(500, delivery.RecordId);
+    }
+
+    [Fact]
+    public async Task resend_unconfirmedを明示すれば_0件の未確認の作成を再送する()
+    {
+        var (feeds, pleasanter, key) = await UnconfirmedCreateAsync();
+
+        var report = await Create(IngestRunnerTests.Config(), feeds, pleasanter, resendUnconfirmed: true)
+            .Runner.RunAsync(false, CancellationToken.None);
+
+        Assert.Equal(1, report.Sources[0].Created);
+        Assert.Equal(0, report.ExitCode);
+        Assert.Single(pleasanter.Rows);
+        Assert.Equal(DeliveryState.Succeeded, (await _store.GetDeliveryAsync("office", 111, key))!.State);
+    }
+
+    [Fact]
+    public async Task 送信中のまま止まって0件なら_次の実行はCreateを再送せず保留する()
+    {
+        var feeds = new IngestRunnerTests.FakeFeeds(_ => IngestRunnerTests.Xml(IngestRunnerTests.Rss(IngestRunnerTests.Item("a"))));
+        var pleasanter = new IngestRunnerTests.FakePleasanter();
+        using var interrupt = new CancellationTokenSource();
+        pleasanter.Hook = path =>
+        {
+            if (!path.EndsWith("/Create", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            interrupt.Cancel();
+            throw new OperationCanceledException(interrupt.Token);
+        };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, interrupt.Token));
+        pleasanter.Hook = null;
+        var key = (await _store.ListEntriesAsync("first")).Single().ExternalKey;
+
+        var report = await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+
+        Assert.Empty(pleasanter.Rows);
+        Assert.Equal(1, report.Sources[0].Unconfirmed);
+        Assert.Equal(1, report.ExitCode);
+        Assert.Equal("CreateUnconfirmed", (await _store.GetDeliveryAsync("office", 111, key))!.LastOutcome);
+    }
+
+    [Fact]
+    public async Task 認証失敗で止めた配送は_書き込みを送っていないので次の実行で通常どおり作る()
+    {
+        var feeds = new IngestRunnerTests.FakeFeeds(_ => IngestRunnerTests.Xml(IngestRunnerTests.Rss(IngestRunnerTests.Item("a"))));
+        var pleasanter = new IngestRunnerTests.FakePleasanter { Hook = _ => new HttpResponseMessage(HttpStatusCode.Unauthorized) };
+        await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+        pleasanter.Hook = null;
+
+        var report = await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+
+        Assert.Equal(1, report.Sources[0].Created);
+        Assert.Equal(0, report.ExitCode);
+    }
+
+    [Fact]
+    public async Task 未確認の作成を確認できないまま認証失敗で止まっても_未確認の印を保つ()
+    {
+        var (feeds, pleasanter, key) = await UnconfirmedCreateAsync();
+        pleasanter.Hook = _ => new HttpResponseMessage(HttpStatusCode.Unauthorized);
+        await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+        pleasanter.Hook = null;
+        Assert.Equal("CreateUnconfirmed", (await _store.GetDeliveryAsync("office", 111, key))!.LastOutcome);
+
+        var report = await Create(IngestRunnerTests.Config(), feeds, pleasanter).Runner.RunAsync(false, CancellationToken.None);
+
+        Assert.Empty(pleasanter.Rows);
+        Assert.Equal(1, report.Sources[0].Unconfirmed);
     }
 }

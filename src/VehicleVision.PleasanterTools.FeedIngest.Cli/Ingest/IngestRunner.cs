@@ -24,6 +24,12 @@ public sealed class SourceReport(string sourceId)
 
     public int Failed { get; set; }
 
+    /// <summary>
+    /// 作成が適用されたか確認できず、Create を再送せず保留した記事（<see cref="Held"/> にも数える）。
+    /// 運用者が未適用を確認してから <c>--resend-unconfirmed</c> で再実行する。
+    /// </summary>
+    public int Unconfirmed { get; set; }
+
     /// <summary>未処理（実行を止めたため送っていない記事）。</summary>
     public int Pending { get; set; }
 
@@ -59,6 +65,9 @@ public sealed record IngestReport(IReadOnlyList<SourceReport> Sources, string? S
 /// 取得は保存済みの検証子で条件付きにし、<b>解析・保存に成功してから</b>検証子を進める（200 を受けただけでは進めない）。
 /// 配送は、保存済みの記事のスナップショットから、取得とは独立に処理する（304 でも、取得に失敗しても、未送信は再開する）。
 /// 前回送った値ハッシュと対応づけの版が同じなら API を呼ばない（利用者が所有列を編集していても、毎回は戻さない。U5）。</para>
+/// <para><b>作成が未確認の配送</b>（送信中のまま止まって Unknown に戻された、または照合しきれず保留にした）は、
+/// 外部キーで検索し、1 件なら通常どおり確認・更新、0 件でも Create を再送せず保留する（元の要求が遅れて適用され得るため）。
+/// 運用者が未適用を確認したら、<paramref name="resendUnconfirmed"/>（<c>--resend-unconfirmed</c>）で再実行する。</para>
 /// <para>状態が無い場合は、毎回取得し、既存レコードの所有列が取り込み値と違えば更新する。</para>
 /// </remarks>
 public sealed class IngestRunner(
@@ -69,8 +78,11 @@ public sealed class IngestRunner(
     TextWriter output,
     IIngestStateStore? state = null,
     string? ownerId = null,
-    TimeProvider? time = null)
+    TimeProvider? time = null,
+    bool resendUnconfirmed = false)
 {
+    /// <summary>送信直前に記録する結果の分類。残ったまま Unknown に戻された配送は、作成が適用されたか分からない。</summary>
+    private const string SendingOutcome = "Sending";
     private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     /// <param name="dryRun">true なら Pleasanter へも状態 DB へも接続せず、取得・解析・対応づけまで確認する。</param>
@@ -317,12 +329,14 @@ public sealed class IngestRunner(
                 return null;
             }
 
-            await SaveAsync(store, source, record, previous, DeliveryState.Sending, previous?.RecordId, previous?.LastOutcome, countAttempt: true, token)
+            await SaveAsync(store, source, record, previous, DeliveryState.Sending, previous?.RecordId, SendingOutcome, countAttempt: true, token)
                 .ConfigureAwait(false);
         }
 
+        // 前回の作成結果が未確認なら、検索が 0 件でも Create しない（明示の再実行だけが許す）
+        var allowCreate = resendUnconfirmed || !IsCreateUnconfirmed(previous);
         var result = await upserter!
-            .UpsertAsync(source.Target.SiteId, record, source.Target.Mode, token)
+            .UpsertAsync(source.Target.SiteId, record, source.Target.Mode, allowCreate, token)
             .ConfigureAwait(false);
         switch (result.Outcome)
         {
@@ -339,6 +353,10 @@ public sealed class IngestRunner(
             case UpsertOutcome.Held:
                 report.Held++;
                 break;
+            case UpsertOutcome.CreateUnconfirmed:
+                report.Held++;
+                report.Unconfirmed++;
+                break;
             case UpsertOutcome.Failed:
                 report.Failed++;
                 break;
@@ -353,6 +371,11 @@ public sealed class IngestRunner(
             ? result.Outcome.ToString()
             : null;
     }
+
+    /// <summary>前回、作成が適用されたか確認できないまま残った配送か。</summary>
+    private static bool IsCreateUnconfirmed(Delivery? previous)
+        => previous is { State: DeliveryState.Unknown, LastOutcome: SendingOutcome }
+            or { State: DeliveryState.Held, LastOutcome: nameof(UpsertOutcome.CreateUnconfirmed) };
 
     private async Task RecordAsync(
         IIngestStateStore store, SourceConfiguration source, EntryMapper mapper, MappedRecord record, Delivery? previous,
@@ -373,14 +396,25 @@ public sealed class IngestRunner(
                     token).ConfigureAwait(false);
                 break;
             case UpsertOutcome.Held:
+            case UpsertOutcome.CreateUnconfirmed:
             case UpsertOutcome.Failed:
                 await SaveAsync(store, source, record, previous, DeliveryState.Held, result.RecordId, result.Outcome.ToString(), countAttempt: false, token)
                     .ConfigureAwait(false);
                 break;
             default:
-                // 認証失敗・回数制限・予算切れ: 書き込みが届いたか分からないので Unknown（次回、外部キーで照合する）
-                await SaveAsync(store, source, record, previous, DeliveryState.Unknown, result.RecordId, result.Outcome.ToString(), countAttempt: false, token)
-                    .ConfigureAwait(false);
+                // 認証失敗・回数制限・予算切れ: 書き込みが届いたか分からないので Unknown（次回、外部キーで照合する）。
+                // ただし前回から作成が未確認のままなら、この実行で確認できていないので、未確認の印を保つ（0 件で Create させない）
+                if (IsCreateUnconfirmed(previous))
+                {
+                    await SaveAsync(store, source, record, previous, DeliveryState.Held, result.RecordId, nameof(UpsertOutcome.CreateUnconfirmed), countAttempt: false, token)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    await SaveAsync(store, source, record, previous, DeliveryState.Unknown, result.RecordId, result.Outcome.ToString(), countAttempt: false, token)
+                        .ConfigureAwait(false);
+                }
+
                 break;
         }
     }
@@ -406,6 +440,7 @@ public sealed class IngestRunner(
         output.WriteLine(
             $"source={report.SourceId} created={report.Created} updated={report.Updated} unchanged={report.Unchanged}"
             + $" held={report.Held} failed={report.Failed} pending={report.Pending} mapped={report.Mapped}"
+            + (report.Unconfirmed == 0 ? string.Empty : $" unconfirmed={report.Unconfirmed}")
             + (report.Error is null ? string.Empty : $" error={report.Error}"));
     }
 }

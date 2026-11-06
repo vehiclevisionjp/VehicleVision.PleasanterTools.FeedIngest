@@ -15,7 +15,7 @@ public static class CliApp
     public const string Usage =
         "Usage:\n"
         + "  VehicleVision.PleasanterTools.FeedIngest check\n"
-        + "  VehicleVision.PleasanterTools.FeedIngest ingest --config <file> [--dry-run]\n"
+        + "  VehicleVision.PleasanterTools.FeedIngest ingest --config <file> [--dry-run] [--resend-unconfirmed]\n"
         + "  VehicleVision.PleasanterTools.FeedIngest migrate | migrate-status\n"
         + "  VehicleVision.PleasanterTools.FeedIngest unlock";
 
@@ -140,6 +140,7 @@ public static class CliApp
     {
         string? path = null;
         var dryRun = false;
+        var resendUnconfirmed = false;
         for (var i = 1; i < args.Length; i++)
         {
             if (args[i] == "--config" && i + 1 < args.Length && path is null)
@@ -150,6 +151,10 @@ public static class CliApp
             {
                 dryRun = true;
             }
+            else if (args[i] == "--resend-unconfirmed" && !resendUnconfirmed)
+            {
+                resendUnconfirmed = true;
+            }
             else
             {
                 error.WriteLine(Usage);
@@ -157,7 +162,7 @@ public static class CliApp
             }
         }
 
-        if (path is null)
+        if (path is null || (dryRun && resendUnconfirmed))
         {
             error.WriteLine(Usage);
             return 2;
@@ -223,7 +228,8 @@ public static class CliApp
                 environment,
                 output,
                 stateStore,
-                $"{Environment.ProcessId}@{Environment.MachineName}");
+                $"{Environment.ProcessId}@{Environment.MachineName}",
+                resendUnconfirmed: resendUnconfirmed);
             var report = await runner.RunAsync(dryRun, token).ConfigureAwait(false);
             return report.ExitCode;
         }

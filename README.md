@@ -32,6 +32,12 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。
 取り込み先には、外部キー用に未使用の Class 列（選択肢なし）を 1 本確保してください。
 
+**作成が適用されたか確認できなかった記事**（Create の応答が不明で照合しきれなかった、または送信中のまま止まった）は、
+次の実行でも外部キーを検索し、1 件ならその ID で確認・更新します。0 件でも **Create を再送せず保留のまま**にします
+（元の要求が遅れて適用され、重複して作られるのを避けるため）。出力には `unconfirmed=<件数>` が付き、終了コードは 1 です。
+Pleasanter 側で未適用を確認したら、`ingest --config <設定ファイル> --resend-unconfirmed` で、0 件の未確認の記事の Create を再送します
+（`--dry-run` とは併用できません。実行ごとに指定します）。
+
 ## 状態 DB
 
 ```powershell
