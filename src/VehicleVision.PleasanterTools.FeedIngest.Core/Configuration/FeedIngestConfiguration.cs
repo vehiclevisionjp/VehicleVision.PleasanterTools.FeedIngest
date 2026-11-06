@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
@@ -18,8 +19,13 @@ public sealed record SourceConfiguration(
     string Id, Uri Url, FeedFormat Format, HttpConfiguration Http,
     TargetConfiguration Target, IReadOnlyList<MappingConfiguration> Mapping);
 
+/// <summary>
+/// 取得の設定。<paramref name="AllowedNetworks"/>・<paramref name="AllowedHosts"/> は、内部ホストの明示許可（U11）で、
+/// この source だけに効く（空なら内部・予約アドレス宛を常に拒否）。
+/// </summary>
 public sealed record HttpConfiguration(
-    int TimeoutSeconds, int MaxRedirects, int MaxBodyBytes, AuthenticationConfiguration Authentication);
+    int TimeoutSeconds, int MaxRedirects, int MaxBodyBytes, AuthenticationConfiguration Authentication,
+    IReadOnlyList<IPNetwork> AllowedNetworks, IReadOnlyList<string> AllowedHosts);
 
 public sealed record AuthenticationConfiguration(
     AuthenticationKind Type, SecretReference? Username, SecretReference? Password,
