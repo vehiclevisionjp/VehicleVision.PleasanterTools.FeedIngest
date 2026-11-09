@@ -511,7 +511,7 @@ public sealed class ExternalKeyUpserterTests
 
         var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert);
 
-        Assert.Equal(UpsertOutcome.Held, result.Outcome);
+        Assert.Equal(UpsertOutcome.CreateUnconfirmed, result.Outcome);
         Assert.Equal(1, server.Count("Create"));
         Assert.Equal(5, server.Count("Get"));
         Assert.Equal([1, 2, 4, 4], delays.Select(d => (int)d.TotalSeconds));
@@ -646,7 +646,7 @@ public sealed class ExternalKeyUpserterTests
 
         var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert);
 
-        Assert.Equal(UpsertOutcome.Held, result.Outcome);
+        Assert.Equal(UpsertOutcome.CreateUnconfirmed, result.Outcome);
         Assert.Equal(1, server.Count("Create"));
     }
 
@@ -721,5 +721,57 @@ public sealed class ExternalKeyUpserterTests
         var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert);
 
         Assert.DoesNotContain("secret-api-key", result.Reason ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task allowCreateがfalseなら検索が0件でもCreateせず未確認として保留する()
+    {
+        var server = new FakePleasanter();
+        var (upserter, _) = Create(server);
+
+        var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert, allowCreate: false);
+
+        Assert.Equal(UpsertOutcome.CreateUnconfirmed, result.Outcome);
+        Assert.Equal(0, server.Count("Create"));
+        Assert.Equal(1, server.Count("Get"));
+    }
+
+    [Fact]
+    public async Task allowCreateがfalseでも検索が1件なら通常どおり確認する()
+    {
+        var server = new FakePleasanter();
+        server.Rows.Add(ExistingRow(7));
+        var (upserter, _) = Create(server);
+
+        var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert, allowCreate: false);
+
+        Assert.Equal(UpsertOutcome.Unchanged, result.Outcome);
+        Assert.Equal(7, result.RecordId);
+        Assert.Equal(0, server.Count("Create"));
+    }
+
+    [Fact]
+    public async Task 作成の照合が回数制限で終わったら_次回に回さず未確認として保留する()
+    {
+        var created = false;
+        var server = new FakePleasanter
+        {
+            Hook = (path, _, _) =>
+            {
+                if (path.EndsWith("/Create", StringComparison.Ordinal))
+                {
+                    created = true;
+                    return Status(HttpStatusCode.BadGateway);
+                }
+
+                return created ? Status(HttpStatusCode.TooManyRequests, TimeSpan.FromMinutes(5)) : null;
+            },
+        };
+        var (upserter, _) = Create(server);
+
+        var result = await upserter.UpsertAsync(SiteId, Record(), TargetMode.Upsert);
+
+        Assert.Equal(UpsertOutcome.CreateUnconfirmed, result.Outcome);
+        Assert.Equal(1, server.Count("Create"));
     }
 }
