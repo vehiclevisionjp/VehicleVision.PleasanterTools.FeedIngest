@@ -32,6 +32,25 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。
 取り込み先には、外部キー用に未使用の Class 列（選択肢なし）を 1 本確保してください。
 
+### 社内のフィードを取得する
+
+既定では、loopback・link-local・プライベート・予約アドレス（社内のアドレス）へ解決されるフィードは取得しません（SSRF 対策）。
+社内のフィードを取得するには、その source の `http` に、許可する範囲とホストを明示します。
+
+```json
+"http": {
+  "authentication": { "type": "none" },
+  "allowedNetworks": ["10.20.30.0/24"],
+  "allowedHosts": ["feeds.corp.example"]
+}
+```
+
+- 許可は、`allowedHosts` に URL のホストがあり、かつ解決後の IP が `allowedNetworks` に入るときだけです（両方）。その source だけに効きます。
+- **許可の範囲は最小に、CIDR は狭く（可能なら `/32`）してください。** `/8` より広い範囲、link-local・クラウドのメタデータ（169.254.0.0/16 など）は指定できません。
+- HTTPS のみ・TLS 検証・別 origin へのリダイレクト拒否は変わりません。社内 CA の証明書は OS の信頼ストアへ入れてください。
+- 許可を設定すると、`ingest` の起動時に、件数だけの警告を 1 行出します（範囲やホスト名は出しません）。
+- 設定の詳細は [対応づけ設定](_documents/対応づけ設定.md#内部ホストの明示許可u11) を参照してください。
+
 ## 状態 DB
 
 ```powershell

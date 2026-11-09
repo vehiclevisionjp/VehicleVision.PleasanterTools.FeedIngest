@@ -99,6 +99,74 @@ public sealed class CliAppTests
     }
 
     [Fact]
+    public async Task 許可リストがあれば_件数だけの警告を1行出し_範囲とホストは出さない()
+    {
+        var path = WriteConfig(ValidConfig.Replace(
+            "\"http\": {\"authentication\": {\"type\": \"none\"}}",
+            "\"http\": {\"authentication\": {\"type\": \"none\"}, \"allowedNetworks\": [\"10.20.0.0/16\"], \"allowedHosts\": [\"feeds.corp.example\"]}",
+            StringComparison.Ordinal).Replace("https://feeds.example.test/feed", "https://127.0.0.1/feed", StringComparison.Ordinal));
+        try
+        {
+            var (code, output, error) = await RunAsync(["ingest", "--config", path, "--dry-run"]);
+
+            // 取得先は許可の範囲外の loopback なので拒否される（通信しない）。分類だけが出る
+            Assert.Equal(1, code);
+            Assert.Contains("fetch-Destination", output, StringComparison.Ordinal);
+            var warnings = error.Split('\n').Where(line => line.StartsWith("Warning:", StringComparison.Ordinal)).ToList();
+            var warning = Assert.Single(warnings);
+            Assert.Contains("1 source(s)", warning, StringComparison.Ordinal);
+            Assert.Contains("1 network(s)", warning, StringComparison.Ordinal);
+            Assert.Contains("1 host(s)", warning, StringComparison.Ordinal);
+            Assert.DoesNotContain("10.20", error + output, StringComparison.Ordinal);
+            Assert.DoesNotContain("corp.example", error + output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task 許可リストが空なら警告を出さない()
+    {
+        var path = WriteConfig(ValidConfig);
+        try
+        {
+            using var cts = new CancellationTokenSource();
+            await cts.CancelAsync();
+
+            var (_, _, error) = await RunAsync(["ingest", "--config", path, "--dry-run"], token: cts.Token);
+
+            Assert.DoesNotContain("Warning", error, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task 不正な許可の範囲は行とキーを示して終了コード2()
+    {
+        var path = WriteConfig(ValidConfig.Replace(
+            "\"http\": {\"authentication\": {\"type\": \"none\"}}",
+            "\"http\": {\"authentication\": {\"type\": \"none\"}, \"allowedNetworks\": [\"0.0.0.0/0\"]}",
+            StringComparison.Ordinal));
+        try
+        {
+            var (code, output, error) = await RunAsync(["ingest", "--config", path, "--dry-run"]);
+
+            Assert.Equal(2, code);
+            Assert.Contains("allowedNetworks[0]", error, StringComparison.Ordinal);
+            Assert.Empty(output);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task 中断は終了コード130()
     {
         var path = WriteConfig(ValidConfig);
