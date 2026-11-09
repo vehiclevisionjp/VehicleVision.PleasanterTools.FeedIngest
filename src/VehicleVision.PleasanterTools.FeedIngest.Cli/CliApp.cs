@@ -52,6 +52,11 @@ public static class CliApp
             return await UnlockAsync(output, error, environment, cancellationToken).ConfigureAwait(false);
         }
 
+        if (args.Length >= 1 && args[0] == "validate")
+        {
+            return await ValidateAsync(args, output, error, environment, cancellationToken).ConfigureAwait(false);
+        }
+
         if (args.Length >= 1 && args[0] == "ingest")
         {
             return await IngestAsync(args, output, error, environment, cancellationToken).ConfigureAwait(false);
@@ -135,6 +140,119 @@ public static class CliApp
         }
     }
 
+    /// <summary>設定ファイルを読んで検証する。誤りなら診断を <paramref name="error"/> へ書いて <c>null</c>（パスや値は出さない）。</summary>
+    private static async Task<FeedIngestConfiguration?> ReadConfigurationAsync(string path, TextWriter error, CancellationToken token)
+    {
+        try
+        {
+            return ConfigurationReader.Parse(await File.ReadAllTextAsync(path, token).ConfigureAwait(false));
+        }
+        catch (ConfigurationException ex)
+        {
+            error.WriteLine(ex.Message);
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            // パスやシステムのメッセージは出さない
+            error.WriteLine("Cannot read the configuration file.");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 設定ファイルを通信せずに検証する（状態 DB にも Pleasanter にも触れない）。
+    /// <c>--check-secrets</c> は、参照する秘密が解決できることだけを確かめる（環境変数名だけ報告し、値・パスは出さない）。
+    /// </summary>
+    private static async Task<int> ValidateAsync(
+        string[] args, TextWriter output, TextWriter error, Func<string, string?>? environment, CancellationToken token)
+    {
+        string? path = null;
+        var checkSecrets = false;
+        for (var i = 1; i < args.Length; i++)
+        {
+            if (args[i] == "--config" && i + 1 < args.Length && path is null)
+            {
+                path = args[++i];
+            }
+            else if (args[i] == "--check-secrets" && !checkSecrets)
+            {
+                checkSecrets = true;
+            }
+            else
+            {
+                error.WriteLine(Usage);
+                return 2;
+            }
+        }
+
+        if (path is null)
+        {
+            error.WriteLine(Usage);
+            return 2;
+        }
+
+        var configuration = await ReadConfigurationAsync(path, error, token).ConfigureAwait(false);
+        if (configuration is null)
+        {
+            return 2;
+        }
+
+        if (checkSecrets)
+        {
+            var failed = false;
+            foreach (var secret in SecretsOf(configuration))
+            {
+                try
+                {
+                    _ = secret.Resolve(environment);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // 文言にキー名（環境変数名）だけが含まれる
+                    error.WriteLine(ex.Message);
+                    failed = true;
+                }
+            }
+
+            if (failed)
+            {
+                return 2;
+            }
+        }
+
+        output.WriteLine($"valid pleasanter={configuration.Pleasanter.Id} sources={configuration.Sources.Count}"
+            + (checkSecrets ? " secrets=resolved" : string.Empty));
+        foreach (var source in configuration.Sources)
+        {
+            output.WriteLine($"source={source.Id} site={source.Target.SiteId} mode={source.Target.Mode} mappings={source.Mapping.Count}");
+        }
+
+        return 0;
+    }
+
+    private static IEnumerable<SecretReference> SecretsOf(FeedIngestConfiguration configuration)
+    {
+        yield return configuration.Pleasanter.ApiKey;
+        foreach (var authentication in configuration.Sources.Select(source => source.Http.Authentication))
+        {
+            if (authentication.Username is not null)
+            {
+                yield return authentication.Username;
+            }
+
+            if (authentication.Password is not null)
+            {
+                yield return authentication.Password;
+            }
+
+            foreach (var header in authentication.Headers)
+            {
+                yield return header.Value;
+            }
+        }
+    }
+
     private static async Task<int> IngestAsync(
         string[] args, TextWriter output, TextWriter error, Func<string, string?>? environment, CancellationToken token)
     {
@@ -163,20 +281,9 @@ public static class CliApp
             return 2;
         }
 
-        FeedIngestConfiguration configuration;
-        try
+        var configuration = await ReadConfigurationAsync(path, error, token).ConfigureAwait(false);
+        if (configuration is null)
         {
-            configuration = ConfigurationReader.Parse(await File.ReadAllTextAsync(path, token).ConfigureAwait(false));
-        }
-        catch (ConfigurationException ex)
-        {
-            error.WriteLine(ex.Message);
-            return 2;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-        {
-            // パスやシステムのメッセージは出さない
-            error.WriteLine("Cannot read the configuration file.");
             return 2;
         }
 
