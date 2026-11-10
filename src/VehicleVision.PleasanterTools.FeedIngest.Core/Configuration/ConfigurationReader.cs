@@ -31,11 +31,11 @@ public static partial class ConfigurationReader
         }
         catch (JsonException ex)
         {
-            throw new ConfigurationException(checked((int)(ex.LineNumber ?? 0) + 1), "$", "JSON の構文が不正です。");
+            throw new ConfigurationException(checked((int)(ex.LineNumber ?? 0) + 1), "$", "The JSON syntax is invalid.");
         }
         catch (EncoderFallbackException)
         {
-            throw new ConfigurationException(1, "$", "不正な Unicode 文字列です。");
+            throw new ConfigurationException(1, "$", "The string contains invalid Unicode.");
         }
     }
 
@@ -53,7 +53,7 @@ public static partial class ConfigurationReader
                 var line = Line(lineStarts, reader.TokenStartIndex);
                 if (!names.Add(name))
                 {
-                    throw new ConfigurationException(line, child, "プロパティが重複しています。");
+                    throw new ConfigurationException(line, child, "The property is duplicated.");
                 }
                 locations[child] = line;
                 reader.Read();
@@ -85,7 +85,7 @@ public static partial class ConfigurationReader
         var apiVersion = destination.Required("apiVersion").Decimal();
         if (apiVersion != 1.1m)
         {
-            throw destination.Required("apiVersion").Error("対応 API 版は 1.1 のみです。");
+            throw destination.Required("apiVersion").Error("Only API version 1.1 is supported.");
         }
         var timezone = destination.Required("apiKeyUserTimeZoneId");
         var timezoneId = timezone.Text();
@@ -95,7 +95,7 @@ public static partial class ConfigurationReader
         }
         catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
         {
-            throw timezone.Error("認識できないタイムゾーンです。");
+            throw timezone.Error("The time zone is not recognized.");
         }
         var target = new DestinationConfiguration(
             destination.Required("id").Text(), destination.Required("baseUrl").HttpsUrl(allowQuery: false),
@@ -103,7 +103,7 @@ public static partial class ConfigurationReader
         var sources = root.Required("sources").Array();
         if (sources.Count == 0)
         {
-            throw root.Required("sources").Error("取り込み元が必要です。");
+            throw root.Required("sources").Error("At least one source is required.");
         }
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var result = new List<SourceConfiguration>();
@@ -113,7 +113,7 @@ public static partial class ConfigurationReader
             var id = source.Required("id").Text();
             if (!ids.Add(id))
             {
-                throw source.Required("id").Error("取り込み元 ID が重複しています。");
+                throw source.Required("id").Error("The source ID is duplicated.");
             }
             var format = source.Required("format").Choice<FeedFormat>("auto", "rss20", "atom10");
             var http = ReadHttp(source.Required("http"));
@@ -123,13 +123,13 @@ public static partial class ConfigurationReader
             var external = site.Required("externalKeyColumn");
             if (!ColumnName().IsMatch(external.Text()) || !external.Text().StartsWith("Class", StringComparison.Ordinal))
             {
-                throw external.Error("外部キーは Class 列が必要です。");
+                throw external.Error("The external key must be a Class column.");
             }
             var mode = site.Required("mode").Choice<TargetMode>("upsert", "createOnly");
             var mappings = source.Required("mapping").Array();
             if (mappings.Count == 0)
             {
-                throw source.Required("mapping").Error("対応づけが必要です。");
+                throw source.Required("mapping").Error("At least one mapping is required.");
             }
             var columns = new HashSet<string>(StringComparer.Ordinal) { external.Text() };
             var rules = new List<MappingConfiguration>();
@@ -171,7 +171,7 @@ public static partial class ConfigurationReader
                 var headerNodes = auth.Required("headers").Array();
                 if (headerNodes.Count == 0)
                 {
-                    throw auth.Required("headers").Error("認証ヘッダが必要です。");
+                    throw auth.Required("headers").Error("At least one authentication header is required.");
                 }
                 var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var header in headerNodes)
@@ -181,7 +181,7 @@ public static partial class ConfigurationReader
                     var name = nameNode.Text();
                     if (!HeaderName().IsMatch(name) || !names.Add(name) || IsReservedHeader(name))
                     {
-                        throw nameNode.Error("禁止・重複または不正なヘッダ名です。");
+                        throw nameNode.Error("The header name is forbidden, duplicated or invalid.");
                     }
                     headers.Add(new HeaderConfiguration(name, header.Required("valueEnv").Secret()));
                 }
@@ -208,18 +208,18 @@ public static partial class ConfigurationReader
         var column = target.Text();
         if (!ColumnName().IsMatch(column))
         {
-            throw target.Error("未対応の列です。Attachments・システム列は指定できません。");
+            throw target.Error("The column is not supported. Attachments and system columns cannot be specified.");
         }
         if (!columns.Add(column))
         {
-            throw target.Error("列が重複、または外部キー予約列です。");
+            throw target.Error("The column is duplicated or reserved for the external key.");
         }
         var source = rule.Optional("source");
         var constant = rule.Optional("constant");
         var fallback = rule.Optional("default");
         if ((source is null) == (constant is null) || (constant is not null && fallback is not null))
         {
-            throw rule.Error("source と constant はいずれか一方、constant と default は併用不可です。");
+            throw rule.Error("Specify exactly one of source and constant. constant and default cannot be combined.");
         }
         var transform = rule.Optional("transform")?.Choice<MappingTransform>("identity", "join", "json")
             ?? MappingTransform.Identity;
@@ -232,7 +232,7 @@ public static partial class ConfigurationReader
         }
         else if (separator is not null)
         {
-            throw separator.Error("separator は join 専用です。");
+            throw separator.Error("separator is only for join.");
         }
         if (constant is not null)
         {
@@ -248,19 +248,19 @@ public static partial class ConfigurationReader
             if (!isArray && !isDate && !isMetadata
                 && name is not ("title" or "link" or "contentText" or "summaryText" or "nativeId" or "sourceId"))
             {
-                throw source.Error("未定義の元項目です。");
+                throw source.Error("The source field is not defined.");
             }
             if ((isArray && transform != MappingTransform.Join)
                 || (isMetadata && transform != MappingTransform.Json)
                 || (!isArray && !isMetadata && transform != MappingTransform.Identity))
             {
-                throw source.Error("元項目の型と変換が一致しません。");
+                throw source.Error("The source field type does not match the transform.");
             }
             var dateColumn = column.StartsWith("Date", StringComparison.Ordinal);
             if (isDate != dateColumn || column.StartsWith("Num", StringComparison.Ordinal)
                 || column.StartsWith("Check", StringComparison.Ordinal))
             {
-                throw source.Error("元項目と送信列の型が一致しません。");
+                throw source.Error("The source field type does not match the target column type.");
             }
         }
         if (fallback is not null)
@@ -281,7 +281,7 @@ public static partial class ConfigurationReader
         {
             if (node.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
             {
-                throw node.Error("JSON boolean が必要です。");
+                throw node.Error("A JSON boolean is required.");
             }
         }
         else if (column.StartsWith("Date", StringComparison.Ordinal))
@@ -290,7 +290,7 @@ public static partial class ConfigurationReader
             if (!OffsetDate().IsMatch(value) || !DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture,
                     DateTimeStyles.None, out _))
             {
-                throw node.Error("オフセット付きの ISO 8601 日時が必要です。日付クリアは未対応です。");
+                throw node.Error("An ISO 8601 date-time with an offset is required. Clearing a date is not supported.");
             }
         }
         else
@@ -306,19 +306,19 @@ public static partial class ConfigurationReader
         public Node? Optional(string key) =>
             Value.TryGetProperty(key, out var child) ? new Node(child, path + "." + key, locations) : null;
         public Node Required(string key) => Optional(key)
-            ?? throw new ConfigurationException(locations.GetValueOrDefault(path, 1), path + "." + key, "必須項目です。");
+            ?? throw new ConfigurationException(locations.GetValueOrDefault(path, 1), path + "." + key, "The property is required.");
 
         public void Object(params string[] allowed)
         {
             if (Value.ValueKind != JsonValueKind.Object)
             {
-                throw Error("オブジェクトが必要です。");
+                throw Error("A JSON object is required.");
             }
             foreach (var property in Value.EnumerateObject())
             {
                 if (!allowed.Contains(property.Name, StringComparer.Ordinal))
                 {
-                    throw Required(property.Name).Error("未知のプロパティです。");
+                    throw Required(property.Name).Error("The property is unknown.");
                 }
             }
         }
@@ -329,7 +329,7 @@ public static partial class ConfigurationReader
             {
                 if (Optional(key) is { } node)
                 {
-                    throw node.Error("この指定では併用できません。");
+                    throw node.Error("The property cannot be used with this setting.");
                 }
             }
         }
@@ -338,7 +338,7 @@ public static partial class ConfigurationReader
         {
             if (Value.ValueKind != JsonValueKind.Array)
             {
-                throw Error("配列が必要です。");
+                throw Error("A JSON array is required.");
             }
             return Value.EnumerateArray().Select((item, index) =>
                 new Node(item, $"{path}[{index}]", locations)).ToList();
@@ -348,12 +348,12 @@ public static partial class ConfigurationReader
         {
             if (Value.ValueKind != JsonValueKind.String)
             {
-                throw Error("文字列が必要です。");
+                throw Error("A string is required.");
             }
             var text = Value.GetString()!;
             if (!allowEmpty && string.IsNullOrWhiteSpace(text))
             {
-                throw Error("空でない文字列が必要です。");
+                throw Error("A non-empty string is required.");
             }
             return text;
         }
@@ -363,7 +363,7 @@ public static partial class ConfigurationReader
             if (Value.ValueKind != JsonValueKind.Number || !Value.TryGetInt64(out var number)
                 || number < min || number > max)
             {
-                throw Error($"整数の範囲は {min}〜{max} です。");
+                throw Error($"The integer must be from {min} to {max}.");
             }
             return number;
         }
@@ -372,7 +372,7 @@ public static partial class ConfigurationReader
         {
             if (Value.ValueKind != JsonValueKind.Number || !Value.TryGetDecimal(out var number))
             {
-                throw Error("decimal の範囲の JSON number が必要です。");
+                throw Error("A JSON number within the decimal range is required.");
             }
             return number;
         }
@@ -383,7 +383,7 @@ public static partial class ConfigurationReader
             var index = System.Array.IndexOf(values, text);
             if (index < 0)
             {
-                throw Error("未定義の選択値です。");
+                throw Error("The value is not one of the allowed choices.");
             }
             return (T)Enum.ToObject(typeof(T), index);
         }
@@ -396,7 +396,7 @@ public static partial class ConfigurationReader
             }
             catch (InvalidOperationException)
             {
-                throw Error("秘密は _FILE を含まない環境変数名で参照してください。");
+                throw Error("A secret must be referenced by an environment variable name that does not end with _FILE.");
             }
         }
 
@@ -405,7 +405,7 @@ public static partial class ConfigurationReader
             if (!Uri.TryCreate(Text(), UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
                 || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0 || (!allowQuery && uri.Query.Length != 0))
             {
-                throw Error("資格情報・fragment を含まない絶対 HTTPS URL が必要です。");
+                throw Error("An absolute HTTPS URL without credentials or a fragment is required.");
             }
             return uri;
         }

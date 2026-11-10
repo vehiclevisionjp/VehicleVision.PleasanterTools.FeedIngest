@@ -13,7 +13,7 @@ public sealed partial class SecretReference
         if (environmentVariable is null || !EnvironmentName().IsMatch(environmentVariable)
             || environmentVariable.EndsWith("_FILE", StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("秘密参照は _FILE を含まない環境変数名が必要です。");
+            throw new InvalidOperationException("A secret reference requires an environment variable name that does not end with _FILE.");
         }
         EnvironmentVariable = environmentVariable;
     }
@@ -27,13 +27,13 @@ public sealed partial class SecretReference
         var file = environment(EnvironmentVariable + "_FILE");
         if (value is not null && file is not null)
         {
-            throw Error("環境変数と _FILE が競合しています。");
+            throw Error("The environment variable and its _FILE variant are both set. Set only one.");
         }
         if (file is not null)
         {
             if (!Path.IsPathFullyQualified(file))
             {
-                throw Error("_FILE は絶対パスが必要です。");
+                throw Error("The _FILE variable requires an absolute path.");
             }
             try
             {
@@ -42,7 +42,7 @@ public sealed partial class SecretReference
                 var count = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
                 if (count > MaxFileBytes)
                 {
-                    throw Error("秘密ファイルは 64 KiB 以下が必要です。");
+                    throw Error("The file must be 64 KiB or smaller.");
                 }
                 var start = count >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf ? 3 : 0;
                 value = new UTF8Encoding(false, true).GetString(bytes, start, count - start);
@@ -59,18 +59,18 @@ public sealed partial class SecretReference
                 or DecoderFallbackException or ArgumentException or NotSupportedException
                 or System.Security.SecurityException)
             {
-                throw Error("秘密ファイルを UTF-8 として読み取れません。");
+                throw Error("The file cannot be read as UTF-8.");
             }
         }
         if (string.IsNullOrWhiteSpace(value) || value.Contains('\r') || value.Contains('\n'))
         {
-            throw Error("秘密が不在・空、または CR/LF を含みます。");
+            throw Error("The value is not set, is empty, or contains CR or LF.");
         }
         return value;
     }
 
     private InvalidOperationException Error(string reason) =>
-        new($"秘密参照 {EnvironmentVariable}: {reason}");
+        new($"Secret reference {EnvironmentVariable}: {reason}");
 
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.CultureInvariant)]
     private static partial Regex EnvironmentName();

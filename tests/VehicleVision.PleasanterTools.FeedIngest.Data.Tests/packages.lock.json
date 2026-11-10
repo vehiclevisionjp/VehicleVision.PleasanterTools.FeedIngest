@@ -432,8 +432,8 @@
       },
       "VehicleVision.PleasanterTools.Core.Data": {
         "type": "Transitive",
-        "resolved": "0.1.1",
-        "contentHash": "NCI/exlNJMJ1A5FPuUDj3AKtG+OReyueP4wzIZ1U02gTcNVRhMkHe9dPP2XBXUxXkHbefZ7WcPBcPlBv/apHHA==",
+        "resolved": "0.2.0",
+        "contentHash": "bKCLfb56optQP4nxuI2KH1p2DcaAOD/9JVm3s5yuX1eFVBhC04cFpQaB0VFNopjfhue/xmXV6VWyAaN9DlLQnA==",
         "dependencies": {
           "Dapper": "2.1.89",
           "FluentMigrator": "8.0.1",
@@ -496,7 +496,7 @@
       "vehiclevision.pleasantertools.feedingest.data": {
         "type": "Project",
         "dependencies": {
-          "VehicleVision.PleasanterTools.Core.Data": "[0.1.1, )",
+          "VehicleVision.PleasanterTools.Core.Data": "[0.2.0, )",
           "VehicleVision.PleasanterTools.FeedIngest.Core": "[0.1.0, )"
         }
       }

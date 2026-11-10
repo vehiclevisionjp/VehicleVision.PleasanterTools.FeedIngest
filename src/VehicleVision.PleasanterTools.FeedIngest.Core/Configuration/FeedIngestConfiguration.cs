@@ -35,7 +35,7 @@ public sealed record MappingConfiguration(
     MappingTransform Transform, string? Separator, MissingValueBehavior OnMissing);
 
 public sealed class ConfigurationException(int lineNumber, string key, string reason)
-    : InvalidOperationException($"設定エラー: 行 {lineNumber}, キー {key}: {reason}")
+    : InvalidOperationException($"Configuration error at line {lineNumber}, key {key}: {reason}")
 {
     public int LineNumber { get; } = lineNumber;
     public string Key { get; } = key;

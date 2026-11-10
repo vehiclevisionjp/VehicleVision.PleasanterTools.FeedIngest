@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 引数の解析・ヘルプ・出力・終了コード・Ctrl+C（Core.Cli）と、製品群で共通の値（Core.Contracts）。Core.Data は Data プロジェクトが持つ -->
+    <PackageReference Include="VehicleVision.PleasanterTools.Core.Cli" Version="0.2.0" />
+    <PackageReference Include="VehicleVision.PleasanterTools.Core.Contracts" Version="0.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Pleasanter\VehicleVision.PleasanterTools.FeedIngest.Pleasanter.csproj" />
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Feeds\VehicleVision.PleasanterTools.FeedIngest.Feeds.csproj" />
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Data\VehicleVision.PleasanterTools.FeedIngest.Data.csproj" />
