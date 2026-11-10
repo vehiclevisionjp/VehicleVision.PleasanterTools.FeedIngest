@@ -28,9 +28,30 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 
 設定ファイルの形は [対応づけ設定](_documents/対応づけ設定.md) を参照してください（秘密は環境変数名で参照します）。
 `--dry-run` は Pleasanter へ接続せず、取得・解析・対応づけまでを確認します。
-終了コードは 0＝全対象が成功または変更なし、1＝一部でも保留・失敗・未処理、2＝使い方・設定の誤り、130＝中断です。
-出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。
+終了コードは 0＝全対象が成功または変更なし、1＝一部でも保留・失敗・未処理（排他を取れなかった場合を含む）、2＝使い方・設定の誤り、130＝中断です
+（想定外の例外は `[ERROR]` を出して 1 です）。
+出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。結果の行は `[INFO] source=<ID> created=… updated=… unchanged=… held=… failed=… pending=… mapped=…`
+（実行を止めたときは `[INFO] stopped reason=<分類>`）の形で標準出力へ出します。`key=value` の部分は従来のままで、行頭に `[INFO]` の接頭辞が付きます。
+診断（`[WARN]`・`[ERROR]`）は標準エラーへ出します。メッセージは英語・ASCII です。
+`--json` を付けると、結果を 1 行の JSON（`command`・`ok`・`exitCode`・`errors`・`warnings` と、`dryRun`・`stoppedReason`・`sources`）で標準出力へ出します。
 取り込み先には、外部キー用に未使用の Class 列（選択肢なし）を 1 本確保してください。
+
+## コマンドラインの書式
+
+引数の解析・ヘルプ・`--version`・シェル補完は、共通部品 Core.Cli が行います。
+オプションは `--名前`・`-名前`・`/名前` のどれでも書け、値は `--config 値`・`--config=値`・`--config:値` のどれでも渡せます（名前の大文字小文字は区別しません）。
+`--help`（`-h`・`-?`・`/?`）で使い方を、`--version` で版を表示します。
+`completion <powershell|bash|zsh>` は、そのシェル用の補完スクリプトを標準出力へ出します。
+ツール名は `feedingest` です。
+
+| コマンド | 意味 | `--json` |
+| --- | --- | --- |
+| `check` | Pleasanter への接続確認 | 対応 |
+| `ingest --config <ファイル> [--dry-run]` | 設定ファイルに従って取り込む | 対応 |
+| `migrate` | 状態 DB のマイグレーションを適用する | — |
+| `migrate-status` | 未適用のマイグレーションを表示する（未適用があれば終了コード 1） | 対応 |
+| `unlock` | 異常終了で残った実行の排他を解除する | — |
+| `completion <shell>` | 補完スクリプトを出す | — |
 
 ## 状態 DB
 
@@ -44,17 +65,40 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- unlock 
 `FEEDINGEST_DB_CONNECTIONSTRING`・`FEEDINGEST_DB_ALLOW_INSECURE` で指定します（接続文字列は設定ファイルへ書きません）。
 記事のスナップショット（本文・enclosure の URL）を保存するので、DB のアクセスを制限してください。
 `ingest`（`--dry-run` 以外）は、マイグレーション済みの状態 DB が必要です（未適用なら終了コード 2）。
+`migrate`・`migrate-status` の出力は共通部品 Core.Data のもので、適用済み・適用完了の行は `[OK]` で始まり、DB の待機などの進行表示は標準エラーへ出ます。
+設定が不正なときなど、Core.Data 由来の例外メッセージも英語・ASCII です。
 
 ## 接続確認
 
-現在の CLI は、接続先の環境変数 `PLEASANTER_BASE_URL` と `PLEASANTER_API_KEY` を読みます。
+`check` は、接続先の環境変数 `VVPT_PLEASANTER_BASE_URL` と `VVPT_PLEASANTER_API_KEY` を読みます
+（`VVPT_` は VehicleVision PleasanterTools の共通の接頭辞で、製品群の各ツールが同じ名前を使います）。
 API キーは秘密管理基盤などからプロセス環境へ設定し、コマンド履歴・設定ファイルへ直書きしないでください。
-`PLEASANTER_API_KEY_FILE` で秘密ファイルの絶対パスも指定できます。
-ファイルはUTF-8、最大64 KiBで、末尾の改行1組だけを除去します。
-環境変数の値と `_FILE` の併用、空値、改行を含む値はエラーです。
+`VVPT_PLEASANTER_API_KEY_FILE` で秘密ファイルのパスも指定できます（前後の空白・改行を除いて使います）。
+`VVPT_PLEASANTER_API_KEY` と `VVPT_PLEASANTER_API_KEY_FILE` の併用、空のファイルはエラーです。
 接続先はHTTPSのみで、リダイレクトには追従しません。
-`FEEDINGEST_PLEASANTER_BASE_URL`／`FEEDINGEST_PLEASANTER_API_KEY`（または `_FILE`）も使えますが、
-旧 `PLEASANTER_*` と混在すると起動エラーになります。
+
+**旧名は受け付けません。** `PLEASANTER_BASE_URL`・`PLEASANTER_API_KEY`・`PLEASANTER_API_KEY_FILE`、
+`FEEDINGEST_PLEASANTER_BASE_URL`・`FEEDINGEST_PLEASANTER_API_KEY`・`FEEDINGEST_PLEASANTER_API_KEY_FILE` が
+設定されていると（新名との併用を含む）、`check` と `ingest` は
+`[ERROR] Environment variable X is no longer supported. Use Y.` を出して終了コード 2 で止まります。
+設定ファイルの `apiKeyEnv` などが指す環境変数の名前は、利用者が決めるものですが、**旧名と同じ名前（例: `FEEDINGEST_PLEASANTER_API_KEY`）は使えません**
+（旧名として検出され、止まります）。旧名と別の名前（例: `FEEDINGEST_OFFICE_API_KEY`）にしてください。
+`FEEDINGEST_DB_PROVIDER`・`FEEDINGEST_DB_CONNECTIONSTRING`・`FEEDINGEST_DB_ALLOW_INSECURE` は変わりません。
+
+### 旧版からの移行
+
+1. `PLEASANTER_BASE_URL`・`PLEASANTER_API_KEY`（`_FILE`）、または `FEEDINGEST_PLEASANTER_*` を設定している場所
+   （App Service の構成・タスクスケジューラ・systemd・コンテナ定義・CI の秘密など）を、`VVPT_PLEASANTER_BASE_URL`・`VVPT_PLEASANTER_API_KEY`（`_FILE`）へ書き換える
+2. 旧名を消す（残っていると、新名との併用でも動かない）
+3. 設定ファイルの `apiKeyEnv`・`usernameEnv` などが旧名と同じ名前なら、別の名前へ変える（設定ファイルと環境変数の両方）
+4. 結果の行を解析しているスクリプトは、行頭の `[INFO]` の接頭辞と、診断が標準エラーへ移ったことに合わせる。`migrate` の待機期限切れなどを終了コード 2 と読んでいた場合は 1 に直す
+5. 新しい版へ更新する（1〜3 と同時に）
+
+| 旧名 | 新名 |
+| --- | --- |
+| `PLEASANTER_BASE_URL`・`FEEDINGEST_PLEASANTER_BASE_URL` | `VVPT_PLEASANTER_BASE_URL` |
+| `PLEASANTER_API_KEY`・`FEEDINGEST_PLEASANTER_API_KEY` | `VVPT_PLEASANTER_API_KEY` |
+| `PLEASANTER_API_KEY_FILE`・`FEEDINGEST_PLEASANTER_API_KEY_FILE` | `VVPT_PLEASANTER_API_KEY_FILE` |
 
 ```powershell
 dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
