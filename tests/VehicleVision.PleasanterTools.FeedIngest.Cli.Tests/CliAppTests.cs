@@ -264,44 +264,20 @@ public sealed class CliAppTests
     }
 
     [Theory]
-    [InlineData("PLEASANTER_API_KEY", "VVPT_PLEASANTER_API_KEY")]
-    [InlineData("FEEDINGEST_PLEASANTER_BASE_URL", "VVPT_PLEASANTER_BASE_URL")]
-    public async Task 旧名の環境変数はingestでも案内して終了コード2(string legacy, string current)
+    [InlineData("PLEASANTER_BASE_URL")]
+    [InlineData("PLEASANTER_API_KEY")]
+    [InlineData("FEEDINGEST_PLEASANTER_BASE_URL")]
+    [InlineData("FEEDINGEST_PLEASANTER_API_KEY")]
+    public async Task 旧名だけ設定された環境は新名が未設定として終了コード2(string legacy)
     {
-        var path = WriteConfig(ValidConfig);
-        try
-        {
-            var env = new Dictionary<string, string> { [legacy] = "x", [current] = "y" };
+        var env = new Dictionary<string, string> { [legacy] = "x" };
 
-            var (code, output, error) = await RunAsync(["ingest", "--config", path, "--dry-run"], name => env.GetValueOrDefault(name));
+        var (code, output, error) = await RunAsync(["check"], name => env.GetValueOrDefault(name));
 
-            Assert.Equal(2, code);
-            Assert.Empty(output);
-            Assert.Contains($"[ERROR] Environment variable {legacy} is no longer supported. Use {current}.", error, StringComparison.Ordinal);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [Fact]
-    public async Task 設定ファイルが指す名前が旧名と同名なら止まる()
-    {
-        var path = WriteConfig(ValidConfig.Replace("FEEDINGEST_TEST_API_KEY", "FEEDINGEST_PLEASANTER_API_KEY", StringComparison.Ordinal));
-        try
-        {
-            var env = new Dictionary<string, string> { ["FEEDINGEST_PLEASANTER_API_KEY"] = "test-key" };
-
-            var (code, _, error) = await RunAsync(["ingest", "--config", path, "--dry-run"], name => env.GetValueOrDefault(name));
-
-            Assert.Equal(2, code);
-            Assert.Contains("FEEDINGEST_PLEASANTER_API_KEY is no longer supported", error, StringComparison.Ordinal);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
+        Assert.Equal(2, code);
+        Assert.Empty(output);
+        Assert.Contains("VVPT_PLEASANTER_", error, StringComparison.Ordinal);
+        Assert.DoesNotContain("no longer supported", error, StringComparison.Ordinal);
     }
 
     [Fact]

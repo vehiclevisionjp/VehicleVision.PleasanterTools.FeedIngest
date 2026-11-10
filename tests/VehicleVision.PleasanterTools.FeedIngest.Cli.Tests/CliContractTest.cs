@@ -5,7 +5,7 @@ namespace VehicleVision.PleasanterTools.FeedIngest.Cli.Tests;
 
 /// <summary>
 /// CLI の共通仕様の契約テスト（Core.Cli.Testing）。出力が ASCII・結果は stdout で診断は stderr・接頭辞・終了コード・
-/// <c>--json</c> の枠・旧名の検出・秘密を出さない、を確かめる。ネットワークへは出ない（取り込みは、遮断される宛先で試す）。
+/// <c>--json</c> の枠・秘密を出さない、を確かめる。ネットワークへは出ない（取り込みは、遮断される宛先で試す）。
 /// </summary>
 public sealed class CliContractTest : CliContractTests, IDisposable
 {
@@ -187,7 +187,6 @@ public sealed class CliContractTest : CliContractTests, IDisposable
                     ],
                 },
             ],
-            LegacyEnvironment = new CliLegacyEnvironmentProbe { Args = ["check"] },
         };
     }
 }

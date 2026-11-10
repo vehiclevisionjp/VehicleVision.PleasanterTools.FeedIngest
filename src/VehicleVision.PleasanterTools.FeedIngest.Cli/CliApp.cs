@@ -29,7 +29,6 @@ public static class CliApp
     public const string UnlockCommand = "unlock";
 
     // 固有の ErrorCodes（--json の errors[].code）
-    private const string LegacyEnvironmentCode = "LegacyEnvironment";
     private const string ConnectionFailedCode = "ConnectionFailed";
     private const string ConfigurationInvalidCode = "ConfigurationInvalid";
     private const string ConfigurationUnreadableCode = "ConfigurationUnreadable";
@@ -109,38 +108,9 @@ public static class CliApp
         return exitCode;
     }
 
-    /// <summary>旧名の環境変数が設定されていれば、すべて <c>[ERROR]</c> で案内して 2 を返す。無ければ <c>null</c>。</summary>
-    private static int? RejectLegacyEnvironment(CommandContext context, string command, bool json)
-    {
-        var messages = LegacyEnvironmentCheck.Find(context.GetEnvironmentVariable);
-        if (messages.Count == 0)
-        {
-            return null;
-        }
-
-        foreach (var message in messages)
-        {
-            context.Output.Error(message);
-        }
-
-        if (json)
-        {
-            context.Output.WriteJson(
-                command, false, ExitCodeValues.UsageError,
-                [.. messages.Select(message => new CliIssue(LegacyEnvironmentCode, message))], []);
-        }
-
-        return ExitCodeValues.UsageError;
-    }
-
     private static async Task<int> CheckAsync(CommandContext context, CancellationToken token)
     {
         var json = context.Options.Flag(StandardOptions.JsonName);
-        if (RejectLegacyEnvironment(context, CheckCommand, json) is { } legacy)
-        {
-            return legacy;
-        }
-
         try
         {
             // 環境変数の欠落・不正は UsageException（Core.Cli が [ERROR] と 2 にする）
@@ -293,12 +263,6 @@ public static class CliApp
         var dryRun = context.Options.Flag(DryRunOption.Name);
         var path = context.Options.Value(ConfigOption.Name)!;
         var environment = context.GetEnvironmentVariable;
-
-        // 設定ファイルが指す名前が旧名と同名のとき（例: FEEDINGEST_PLEASANTER_API_KEY）も、ここで止まる
-        if (RejectLegacyEnvironment(context, IngestCommand, json) is { } legacy)
-        {
-            return legacy;
-        }
 
         FeedIngestConfiguration configuration;
         try

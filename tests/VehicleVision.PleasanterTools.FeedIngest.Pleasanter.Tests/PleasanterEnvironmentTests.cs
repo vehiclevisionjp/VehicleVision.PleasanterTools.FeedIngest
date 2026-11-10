@@ -27,7 +27,7 @@ public sealed class PleasanterEnvironmentTests
     [InlineData("FEEDINGEST_PLEASANTER_API_KEY")]
     public void 旧名は値として使わない(string legacyName)
     {
-        // 旧名の検出と案内は呼び出し側（CliApp）が先に行う。ここでは、旧名が新名の代わりにならないことを確かめる
+        // 旧名は無視される（新名の代わりにならない）。新名が未設定として UsageException になる
         var variables = new Dictionary<string, string?>
         {
             [legacyName] = legacyName.EndsWith("URL", StringComparison.Ordinal) ? "https://example.invalid" : "do-not-log",

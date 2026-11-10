@@ -77,22 +77,20 @@ API キーは秘密管理基盤などからプロセス環境へ設定し、コ�
 `VVPT_PLEASANTER_API_KEY` と `VVPT_PLEASANTER_API_KEY_FILE` の併用、空のファイルはエラーです。
 接続先はHTTPSのみで、リダイレクトには追従しません。
 
-**旧名は受け付けません。** `PLEASANTER_BASE_URL`・`PLEASANTER_API_KEY`・`PLEASANTER_API_KEY_FILE`、
-`FEEDINGEST_PLEASANTER_BASE_URL`・`FEEDINGEST_PLEASANTER_API_KEY`・`FEEDINGEST_PLEASANTER_API_KEY_FILE` が
-設定されていると（新名との併用を含む）、`check` と `ingest` は
-`[ERROR] Environment variable X is no longer supported. Use Y.` を出して終了コード 2 で止まります。
-設定ファイルの `apiKeyEnv` などが指す環境変数の名前は、利用者が決めるものですが、**旧名と同じ名前（例: `FEEDINGEST_PLEASANTER_API_KEY`）は使えません**
-（旧名として検出され、止まります）。旧名と別の名前（例: `FEEDINGEST_OFFICE_API_KEY`）にしてください。
+**旧名は無視されます（読みません。検出も案内もしません）。** `PLEASANTER_BASE_URL`・`PLEASANTER_API_KEY`・`PLEASANTER_API_KEY_FILE`、
+`FEEDINGEST_PLEASANTER_BASE_URL`・`FEEDINGEST_PLEASANTER_API_KEY`・`FEEDINGEST_PLEASANTER_API_KEY_FILE` だけが設定された環境は、
+新名が未設定として扱われ、`check` は接続設定の不足（終了コード 2）で止まります。
+設定ファイルの `apiKeyEnv` などが指す環境変数の名前は、利用者が決めるものです（例: `FEEDINGEST_OFFICE_API_KEY`）。
 `FEEDINGEST_DB_PROVIDER`・`FEEDINGEST_DB_CONNECTIONSTRING`・`FEEDINGEST_DB_ALLOW_INSECURE` は変わりません。
 
 ### 旧版からの移行
 
 1. `PLEASANTER_BASE_URL`・`PLEASANTER_API_KEY`（`_FILE`）、または `FEEDINGEST_PLEASANTER_*` を設定している場所
    （App Service の構成・タスクスケジューラ・systemd・コンテナ定義・CI の秘密など）を、`VVPT_PLEASANTER_BASE_URL`・`VVPT_PLEASANTER_API_KEY`（`_FILE`）へ書き換える
-2. 旧名を消す（残っていると、新名との併用でも動かない）
-3. 設定ファイルの `apiKeyEnv`・`usernameEnv` などが旧名と同じ名前なら、別の名前へ変える（設定ファイルと環境変数の両方）
-4. 結果の行を解析しているスクリプトは、行頭の `[INFO]` の接頭辞と、診断が標準エラーへ移ったことに合わせる。`migrate` の待機期限切れなどを終了コード 2 と読んでいた場合は 1 に直す
-5. 新しい版へ更新する（1〜3 と同時に）
+   （旧名は無視されます。書き換えるまで、接続設定が未設定として失敗します）
+2. 使わなくなった旧名の設定を消す（残っていても無視されます）
+3. 結果の行を解析しているスクリプトは、行頭の `[INFO]` の接頭辞と、診断が標準エラーへ移ったことに合わせる。`migrate` の待機期限切れなどを終了コード 2 と読んでいた場合は 1 に直す
+4. 新しい版へ更新する（1〜3 と同時に）
 
 | 旧名 | 新名 |
 | --- | --- |
