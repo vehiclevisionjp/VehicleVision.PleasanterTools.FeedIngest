@@ -20,9 +20,12 @@ foreach ($directory in @('src', 'tests')) {
 }
 if ($packages.Count -eq 0) { throw '依存ロックが見つかりません。' }
 # SPDX 式を持たない依存の、承認済みの例外（NOTICE の行に書くライセンス表記）。
-# Core.Data: 自社の共通部品（AGPL／商用。U2、2026-11-01 の決定）。DotNetClient: 自社の共通部品（LGPL／AGPL／商用。2026-11-04 の決定、Issue #85）。SNI.runtime: Microsoft 独自の許諾（2026-10-20 の決定。条件は LICENSING.md）。
+# Core.*: 自社の共通部品（AGPL／商用。U2、2026-11-01 の決定。Core.Contracts・Core.Cli・Core.Cli.Testing は 0.2.0 で加わった同じ共通部品）。DotNetClient: 自社の共通部品（LGPL／AGPL／商用。2026-11-04 の決定、Issue #85）。SNI.runtime: Microsoft 独自の許諾（2026-10-20 の決定。条件は LICENSING.md）。
 $exceptions = @{
     'VehicleVision.PleasanterTools.Core.Data' = 'AGPL-3.0-or-later または商用（自社）'
+    'VehicleVision.PleasanterTools.Core.Contracts' = 'AGPL-3.0-or-later または商用（自社）'
+    'VehicleVision.PleasanterTools.Core.Cli' = 'AGPL-3.0-or-later または商用（自社）'
+    'VehicleVision.PleasanterTools.Core.Cli.Testing' = 'AGPL-3.0-or-later または商用（自社）'
     'VehicleVision.PleasanterTools.DotNetClient' = 'LGPL-3.0-or-later OR AGPL-3.0-or-later OR 商用（自社）'
     'Microsoft.Data.SqlClient.SNI.runtime' = 'Microsoft Software License Terms（MICROSOFT.DATA.SQLCLIENT.SNI LIBRARY）'
 }
