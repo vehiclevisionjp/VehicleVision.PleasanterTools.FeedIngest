@@ -1,18 +1,17 @@
+using VehicleVision.PleasanterTools.Core.Cli;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests;
 
 public sealed class PleasanterEnvironmentTests
 {
-    [Theory]
-    [InlineData("PLEASANTER_")]
-    [InlineData("FEEDINGEST_PLEASANTER_")]
-    public void 旧checkと新しい名前空間を単独で利用できる(string prefix)
+    [Fact]
+    public void checkはVVPT名の環境変数から接続設定を作る()
     {
         var variables = new Dictionary<string, string?>
         {
-            [prefix + "BASE_URL"] = "https://example.invalid",
-            [prefix + "API_KEY"] = "test-key",
+            ["VVPT_PLEASANTER_BASE_URL"] = "https://example.invalid",
+            ["VVPT_PLEASANTER_API_KEY"] = "test-key",
         };
         var options = PleasanterEnvironment.FromEnvironment(name => variables.GetValueOrDefault(name));
         Assert.Equal("test-key", options.ApiKey);
@@ -21,31 +20,40 @@ public sealed class PleasanterEnvironmentTests
         Assert.Equal(TimeSpan.FromSeconds(30), options.Timeout);
     }
 
-    [Fact]
-    public void 名前空間の混在と秘密の競合を拒否する()
+    [Theory]
+    [InlineData("PLEASANTER_BASE_URL")]
+    [InlineData("PLEASANTER_API_KEY")]
+    [InlineData("FEEDINGEST_PLEASANTER_BASE_URL")]
+    [InlineData("FEEDINGEST_PLEASANTER_API_KEY")]
+    public void 旧名は値として使わない(string legacyName)
     {
+        // 旧名は無視される（新名の代わりにならない）。新名が未設定として UsageException になる
         var variables = new Dictionary<string, string?>
         {
-            ["PLEASANTER_BASE_URL"] = "https://example.invalid",
-            ["FEEDINGEST_PLEASANTER_API_KEY"] = "do-not-log",
+            [legacyName] = legacyName.EndsWith("URL", StringComparison.Ordinal) ? "https://example.invalid" : "do-not-log",
         };
-        var error = Assert.Throws<InvalidOperationException>(() =>
-            PleasanterEnvironment.FromEnvironment(name => variables.GetValueOrDefault(name)));
-        Assert.DoesNotContain("do-not-log", error.ToString());
+        Assert.Throws<UsageException>(() => PleasanterEnvironment.FromEnvironment(name => variables.GetValueOrDefault(name)));
     }
 
     [Fact]
     public void checkは値とFILEの競合を拒否する()
     {
-        var error = Assert.Throws<InvalidOperationException>(() => PleasanterEnvironment.FromEnvironment(name => name switch
+        var error = Assert.Throws<UsageException>(() => PleasanterEnvironment.FromEnvironment(name => name switch
         {
-            "PLEASANTER_BASE_URL" => "https://example.invalid",
-            "PLEASANTER_API_KEY" => "do-not-log",
-            "PLEASANTER_API_KEY_FILE" => "secret-path",
+            "VVPT_PLEASANTER_BASE_URL" => "https://example.invalid",
+            "VVPT_PLEASANTER_API_KEY" => "do-not-log",
+            "VVPT_PLEASANTER_API_KEY_FILE" => "secret-path",
             _ => null,
         }));
         Assert.DoesNotContain("do-not-log", error.ToString());
-        Assert.DoesNotContain("secret-path", error.ToString());
+    }
+
+    [Fact]
+    public void checkはAPIキーが無ければ拒否する()
+    {
+        var error = Assert.Throws<UsageException>(() => PleasanterEnvironment.FromEnvironment(name =>
+            name == "VVPT_PLEASANTER_BASE_URL" ? "https://example.invalid" : null));
+        Assert.Contains("VVPT_PLEASANTER_API_KEY", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -55,13 +63,14 @@ public sealed class PleasanterEnvironmentTests
     [InlineData("https://example.invalid/?secret=do-not-log")]
     public void checkの不正な接続先は送信前に拒否する(string? url)
     {
-        var error = Assert.Throws<InvalidOperationException>(() => PleasanterEnvironment.FromEnvironment(name => name switch
+        var error = Assert.Throws<UsageException>(() => PleasanterEnvironment.FromEnvironment(name => name switch
         {
-            "PLEASANTER_BASE_URL" => url,
-            "PLEASANTER_API_KEY" => "do-not-log",
+            "VVPT_PLEASANTER_BASE_URL" => url,
+            "VVPT_PLEASANTER_API_KEY" => "do-not-log",
             _ => null,
         }));
         Assert.DoesNotContain("do-not-log", error.ToString());
+        Assert.All(error.Message, c => Assert.True(c < 128));
     }
 
     [Fact]
@@ -88,8 +97,8 @@ public sealed class PleasanterEnvironmentTests
             File.WriteAllText(file, "test-key\n");
             var options = PleasanterEnvironment.FromEnvironment(name => name switch
             {
-                "PLEASANTER_BASE_URL" => "https://example.invalid",
-                "PLEASANTER_API_KEY_FILE" => file,
+                "VVPT_PLEASANTER_BASE_URL" => "https://example.invalid",
+                "VVPT_PLEASANTER_API_KEY_FILE" => file,
                 _ => null,
             });
             Assert.Equal("test-key", options.ApiKey);

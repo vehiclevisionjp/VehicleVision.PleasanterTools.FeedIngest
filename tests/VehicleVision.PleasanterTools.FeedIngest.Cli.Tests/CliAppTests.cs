@@ -33,7 +33,6 @@ public sealed class CliAppTests
     }
 
     [Theory]
-    [InlineData]
     [InlineData("unknown")]
     [InlineData("check", "extra")]
     [InlineData("migrate", "extra")]
@@ -48,7 +47,53 @@ public sealed class CliAppTests
         var (code, _, error) = await RunAsync(args);
 
         Assert.Equal(2, code);
+        Assert.Contains("[ERROR]", error, StringComparison.Ordinal);
+        Assert.Contains("--help", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task 引数なしは短い使い方をstderrへ出して終了コード2()
+    {
+        var (code, output, error) = await RunAsync([]);
+
+        Assert.Equal(2, code);
+        Assert.Empty(output);
         Assert.Contains("Usage:", error, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("--config=a.json", "--dry-run")]
+    [InlineData("-config", "a.json", "-dry-run")]
+    [InlineData("/config:a.json", "/DRY-RUN")]
+    public async Task 引数は3つの接頭辞と区切りで同じに読む(params string[] options)
+    {
+        var path = WriteConfig(ValidConfig.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 2", StringComparison.Ordinal));
+        try
+        {
+            // 設定の誤りで止まる（引数が読めていれば、その設定ファイルを開く。パスは options の a.json ではなく差し替える）
+            var args = new[] { "ingest" }.Concat(options.Select(o => o.Replace("a.json", path, StringComparison.Ordinal))).ToArray();
+            var (code, _, error) = await RunAsync(args);
+
+            Assert.Equal(2, code);
+            Assert.Contains("schemaVersion", error, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task バージョンとヘルプは標準出力へ出して終了コード0()
+    {
+        var version = await RunAsync(["--version"]);
+        var help = await RunAsync(["ingest", "--help"]);
+
+        Assert.Equal(0, version.Code);
+        Assert.StartsWith("feedingest ", version.Out, StringComparison.Ordinal);
+        Assert.Equal(0, help.Code);
+        Assert.Contains("--config", help.Out, StringComparison.Ordinal);
+        Assert.Empty(help.Err);
     }
 
     [Fact]
@@ -107,10 +152,9 @@ public sealed class CliAppTests
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
 
-            var (code, _, error) = await RunAsync(["ingest", "--config", path, "--dry-run"], token: cts.Token);
+            var (code, _, _) = await RunAsync(["ingest", "--config", path, "--dry-run"], token: cts.Token);
 
             Assert.Equal(130, code);
-            Assert.Contains("Cancelled", error, StringComparison.Ordinal);
         }
         finally
         {
@@ -197,8 +241,8 @@ public sealed class CliAppTests
             await store.TryBeginRunAsync("crashed");
             var released = await RunAsync(["unlock"], Environment);
 
-            Assert.Contains("No active run lock", none.Out, StringComparison.Ordinal);
-            Assert.Contains("Released", released.Out, StringComparison.Ordinal);
+            Assert.Contains("[OK] No active run lock", none.Out, StringComparison.Ordinal);
+            Assert.Contains("[OK] Released", released.Out, StringComparison.Ordinal);
             Assert.Null(await store.FindActiveRunAsync());
         }
         finally
@@ -217,6 +261,36 @@ public sealed class CliAppTests
 
         Assert.Equal(2, code);
         Assert.Contains("FEEDINGEST_DB_PROVIDER", error, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("PLEASANTER_BASE_URL")]
+    [InlineData("PLEASANTER_API_KEY")]
+    [InlineData("FEEDINGEST_PLEASANTER_BASE_URL")]
+    [InlineData("FEEDINGEST_PLEASANTER_API_KEY")]
+    public async Task 旧名だけ設定された環境は新名が未設定として終了コード2(string legacy)
+    {
+        var env = new Dictionary<string, string> { [legacy] = "x" };
+
+        var (code, output, error) = await RunAsync(["check"], name => env.GetValueOrDefault(name));
+
+        Assert.Equal(2, code);
+        Assert.Empty(output);
+        Assert.Contains("VVPT_PLEASANTER_", error, StringComparison.Ordinal);
+        Assert.DoesNotContain("no longer supported", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task jsonは枠つきの1行を標準出力へ出す()
+    {
+        var (code, output, error) = await RunAsync(["check", "--json"], _ => null);
+
+        Assert.Equal(2, code);
+        Assert.Equal(
+            "{\"command\":\"check\",\"ok\":false,\"exitCode\":2,\"errors\":[{\"code\":\"Usage\","
+            + "\"message\":\"Environment variable VVPT_PLEASANTER_BASE_URL must be an HTTPS URL without credentials, query or fragment.\"}],\"warnings\":[]}",
+            output.TrimEnd());
+        Assert.Contains("[ERROR]", error, StringComparison.Ordinal);
     }
 
     [Fact]

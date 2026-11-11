@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
+using VehicleVision.PleasanterTools.Core.Cli;
 using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.Core.Data;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
@@ -70,7 +71,7 @@ public sealed class IngestRunnerStateTests : IDisposable
                     (_, _) => Task.CompletedTask),
                 upserter,
                 null,
-                output,
+                new CliOutput(output, new StringWriter(), _ => null, false, false),
                 state ?? _store,
                 "test-owner"),
         };
@@ -253,7 +254,7 @@ public sealed class IngestRunnerStateTests : IDisposable
         Assert.Equal(1, report.ExitCode);
         Assert.Empty(feeds.Requests);
         Assert.Empty(pleasanter.Paths);
-        Assert.Contains("stopped reason=Locked", run.Output.ToString(), StringComparison.Ordinal);
+        Assert.Contains("[INFO] stopped reason=Locked", run.Output.ToString(), StringComparison.Ordinal);
         Assert.Equal("other-process", (await _store.FindActiveRunAsync())!.OwnerId);
     }
 

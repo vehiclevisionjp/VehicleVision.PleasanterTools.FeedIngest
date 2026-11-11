@@ -39,7 +39,7 @@ https://github.com/xunit/visualstudio.xunit/blob/main/License.txt
 coverlet.collector — MIT
 https://github.com/coverlet-coverage/coverlet/blob/master/LICENSE
 
-配布物に含む依存（直接: VehicleVision.PleasanterTools.Core.Data。それ以外はこれが推移的に伴うもの。net10.0、参照日: 2026-11-02）:
+配布物に含む依存（直接: VehicleVision.PleasanterTools.Core.Data・Core.Cli・Core.Contracts。それ以外はこれが推移的に伴うもの。net10.0、参照日: 2026-11-02）:
 Dapper 2.1.89 / Apache-2.0
 FluentMigrator 8.0.1 / Apache-2.0
 FluentMigrator.Abstractions 8.0.1 / Apache-2.0
@@ -88,15 +88,17 @@ System.Security.Cryptography.Pkcs 10.0.14 / MIT
 System.Security.Cryptography.ProtectedData 9.0.18 / MIT
 System.Threading.RateLimiting 9.0.18 / MIT
 System.ValueTuple 4.6.1 / MIT
-VehicleVision.PleasanterTools.Core.Data 0.1.1 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Cli 0.2.0 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Contracts 0.2.0 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Data 0.2.0 / AGPL-3.0-or-later または商用（自社）
 VehicleVision.PleasanterTools.DotNetClient 0.4.0 / LGPL-3.0-or-later OR AGPL-3.0-or-later OR 商用（自社）
 
-VehicleVision.PleasanterTools.Core.Data は、当社の共通部品 Core（DB の基盤）で、AGPL-3.0-or-later と商用のデュアルライセンスです
+VehicleVision.PleasanterTools.Core.Cli・Core.Contracts・Core.Data は、当社の共通部品 Core（CLI の共通部品・共通の名前と値・DB の基盤）で、AGPL-3.0-or-later と商用のデュアルライセンスです
 （寛容ライセンスの例外。LICENSING.md の「例外: 当社の共通部品 Core」の節と、LICENSE-COMMERCIAL.md を参照）。
 https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Core
 Microsoft.Data.SqlClient.SNI.runtime（Windows 向けのネイティブ SNI）は Microsoft 独自の許諾で、
 条件は LICENSING.md の「例外: Microsoft.Data.SqlClient.SNI.runtime」の節と LICENSE-COMMERCIAL.md に記載しています。
-Core.Data 0.1.1 は 4 方言（SQL Server・PostgreSQL・MySQL・SQLite）のランナーと FluentMigrator.Runner.Core に依存し、IBM Db2・Firebird のドライバは伴いません。
+Core.Data 0.2.0 は 4 方言（SQL Server・PostgreSQL・MySQL・SQLite）のランナーと FluentMigrator.Runner.Core に依存し、IBM Db2・Firebird のドライバは伴いません。
 Core.Data の依存の版は、各 packages.lock.json に記録しています（上の表記は一次情報の nuspec による）。
 
 テスト用の直接・推移依存の全閉包（配布物に含まない。net10.0、参照日: 2026-11-01）:
@@ -105,6 +107,7 @@ Microsoft.CodeCoverage 18.11.0 / MIT
 Microsoft.NET.Test.Sdk 18.11.0 / MIT
 Microsoft.TestPlatform.ObjectModel 18.11.0 / MIT
 Microsoft.TestPlatform.TestHost 18.11.0 / MIT
+VehicleVision.PleasanterTools.Core.Cli.Testing 0.2.0 / AGPL-3.0-or-later または商用（自社）
 xunit 2.9.3 / Apache-2.0
 xunit.abstractions 2.0.3 / Apache-2.0
 xunit.analyzers 1.18.0 / Apache-2.0

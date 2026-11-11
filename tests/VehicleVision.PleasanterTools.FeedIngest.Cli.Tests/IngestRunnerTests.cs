@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
+using VehicleVision.PleasanterTools.Core.Cli;
 using VehicleVision.PleasanterTools.DotNetClient;
 using VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
@@ -160,7 +161,7 @@ public sealed class IngestRunnerTests
                 (_, _) => Task.CompletedTask),
             upserter,
             environment,
-            output);
+            new CliOutput(output, new StringWriter(), _ => null, false, false));
         return (runner, output);
     }
 
@@ -180,7 +181,7 @@ public sealed class IngestRunnerTests
         Assert.Equal(0, second.Sources[0].Created);
         Assert.Equal(2, second.Sources[0].Unchanged);
         Assert.Equal(2, pleasanter.Rows.Count);
-        Assert.Contains("source=first created=2", output.ToString(), StringComparison.Ordinal);
+        Assert.Contains("[INFO] source=first created=2", output.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -283,7 +284,7 @@ public sealed class IngestRunnerTests
         Assert.Single(pleasanter.Paths);
         Assert.Single(feeds.Requests);
         Assert.Equal(1, report.ExitCode);
-        Assert.Contains("stopped reason=Unauthorized", output.ToString(), StringComparison.Ordinal);
+        Assert.Contains("[INFO] stopped reason=Unauthorized", output.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

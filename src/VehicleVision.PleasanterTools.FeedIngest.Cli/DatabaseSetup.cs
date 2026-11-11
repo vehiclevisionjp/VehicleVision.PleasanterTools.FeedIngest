@@ -25,12 +25,16 @@ public static class DatabaseSetup
         return new DatabaseConnectionInfo(provider, connectionString);
     }
 
+    /// <summary>Core.Data の <see cref="MigrationCommand"/> を実行する。結果は <paramref name="output"/>、進行・失敗は <paramref name="error"/>。</summary>
     public static async Task<int> MigrateAsync(
-        string argument, Func<string, string?> environment, string contentRoot, CancellationToken cancellationToken)
+        string argument, Func<string, string?> environment, string contentRoot, TextWriter output, TextWriter error,
+        CancellationToken cancellationToken)
     {
         var info = Resolve(environment, contentRoot);
         return await MigrationCommand
-            .RunAsync(FeedIngestDatabase.Instance.Migrator, info.Provider, info.ConnectionString, [argument], cancellationToken: cancellationToken)
+            .RunAsync(
+                FeedIngestDatabase.Instance.Migrator, info.Provider, info.ConnectionString, [argument],
+                cancellationToken: cancellationToken, output: output, error: error)
             .ConfigureAwait(false);
     }
 }

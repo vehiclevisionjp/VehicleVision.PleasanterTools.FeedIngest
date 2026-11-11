@@ -2,6 +2,9 @@
   <ItemGroup>
     <!-- Pleasanter の Web API クライアント。LGPL・AGPL・商用の 3 層（自社。NOTICE・_documents/アーキテクチャ方針.md） -->
     <PackageReference Include="VehicleVision.PleasanterTools.DotNetClient" Version="0.4.0" />
+    <!-- 環境変数の名前（Core.Contracts）と API キーの読み方（Core.Cli の PleasanterApiKey）。DotNetClient へ渡す値は、ここで読む -->
+    <PackageReference Include="VehicleVision.PleasanterTools.Core.Cli" Version="0.2.0" />
+    <PackageReference Include="VehicleVision.PleasanterTools.Core.Contracts" Version="0.2.0" />
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Core\VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
     <InternalsVisibleTo Include="VehicleVision.PleasanterTools.FeedIngest.Pleasanter.Tests" />
   </ItemGroup>

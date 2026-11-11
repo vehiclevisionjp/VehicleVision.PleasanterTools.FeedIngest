@@ -1,3 +1,4 @@
+using VehicleVision.PleasanterTools.Core.Cli;
 using VehicleVision.PleasanterTools.FeedIngest.Core;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 using VehicleVision.PleasanterTools.FeedIngest.Core.Mapping;
@@ -66,7 +67,7 @@ public sealed class IngestRunner(
     Func<SourceConfiguration, FeedFetcher> fetcherFactory,
     ExternalKeyUpserter? upserter,
     Func<string, string?>? environment,
-    TextWriter output,
+    CliOutput? output,
     IIngestStateStore? state = null,
     string? ownerId = null,
     TimeProvider? time = null)
@@ -78,7 +79,7 @@ public sealed class IngestRunner(
     {
         if (!dryRun && upserter is null)
         {
-            throw new InvalidOperationException("dry-run 以外では送り先が必要です。");
+            throw new InvalidOperationException("A destination is required unless this is a dry run.");
         }
 
         var store = dryRun ? null : state;
@@ -89,7 +90,7 @@ public sealed class IngestRunner(
             if (lease is null)
             {
                 // 他の実行が終わっていない。何も取得・送信しない
-                output.WriteLine("stopped reason=Locked");
+                output?.Info("stopped reason=Locked");
                 return new IngestReport(
                     configuration.Sources.Select(source => new SourceReport(source.Id) { NotProcessed = true }).ToList(),
                     "Locked");
@@ -144,7 +145,7 @@ public sealed class IngestRunner(
 
         if (stoppedBy is not null)
         {
-            output.WriteLine($"stopped reason={stoppedBy}");
+            output?.Info($"stopped reason={stoppedBy}");
         }
 
         return new IngestReport(reports, stoppedBy);
@@ -399,11 +400,11 @@ public sealed class IngestRunner(
     {
         if (report.NotProcessed)
         {
-            output.WriteLine($"source={report.SourceId} not-processed");
+            output?.Info($"source={report.SourceId} not-processed");
             return;
         }
 
-        output.WriteLine(
+        output?.Info(
             $"source={report.SourceId} created={report.Created} updated={report.Updated} unchanged={report.Unchanged}"
             + $" held={report.Held} failed={report.Failed} pending={report.Pending} mapped={report.Mapped}"
             + (report.Error is null ? string.Empty : $" error={report.Error}"));
