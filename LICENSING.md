@@ -95,10 +95,9 @@ AGPL の義務（ソースコード開示・コピーレフト）を負わずに
 `packages.lock.json` を置いているリポジトリでは、推移的依存と実際の版もそこで確認できます。
 
 <!-- license:begin deps-note=free -->
-当社の共通部品 Core（`VehicleVision.PleasanterTools.Core.Data`）は、設計上は利用する予定です
-（[`_documents/アーキテクチャ方針.md`](_documents/アーキテクチャ方針.md) の U2）が、
-**現時点では依存に追加していません**（`packages.lock.json` に含まれません）。
-追加する作業で、`core` の節を `on` に切り替え、採用版と推移依存のライセンスを再確認します。
+当社の共通部品 Core のうち Core.Data（`VehicleVision.PleasanterTools.Core.Data`、0.1.1）を依存に含みます。
+DB の接続とマイグレーションの基盤です。`core` の節と、Core.Data が SqlClient を経由して
+SNI.runtime を推移的に持つための `sni` の節を `on` にしています。直接の依存と推移的な依存の一覧は [`NOTICE`](NOTICE) と `packages.lock.json` にあります。
 
 共通部品 DotNetClient（LGPL／AGPL／商用の 3 層）は、Pleasanter の Web API クライアントとして NuGet で利用します（下の例外の節）。
 <!-- license:end deps-note -->
