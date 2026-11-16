@@ -103,10 +103,10 @@ Core.Data の依存の版は、各 packages.lock.json に記録しています�
 
 テスト用の直接・推移依存の全閉包（配布物に含まない。net10.0、参照日: 2026-11-01）:
 coverlet.collector 10.1.0 / MIT
-Microsoft.CodeCoverage 18.11.0 / MIT
-Microsoft.NET.Test.Sdk 18.11.0 / MIT
-Microsoft.TestPlatform.ObjectModel 18.11.0 / MIT
-Microsoft.TestPlatform.TestHost 18.11.0 / MIT
+Microsoft.CodeCoverage 18.12.0 / MIT
+Microsoft.NET.Test.Sdk 18.12.0 / MIT
+Microsoft.TestPlatform.ObjectModel 18.12.0 / MIT
+Microsoft.TestPlatform.TestHost 18.12.0 / MIT
 VehicleVision.PleasanterTools.Core.Cli.Testing 0.2.0 / AGPL-3.0-or-later または商用（自社）
 xunit 2.9.3 / Apache-2.0
 xunit.abstractions 2.0.3 / Apache-2.0
