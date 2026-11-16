@@ -73,12 +73,7 @@ AI の参照専用で CI は使わないため、ポインタ更新 PR・参照�
 
 採用元（2026-10-27 参照）:
 
-- vehiclevisionjp/VehicleVision.PleasanterTools.Template#61・
-  vehiclevisionjp/VehicleVision.PleasanterTools.Template#63
-- 承認済みコミット `3312f003fbe9827090e20bc643800824bdf30e22` の [配布手順][distribution]
-- 同コミットの [取得スクリプト][sync-script]・[ネットワーク不要の回帰テスト][sync-test]
+- 承認済みコミット `3312f003fbe9827090e20bc643800824bdf30e22` の配布手順
+- 同コミットの取得スクリプト・ネットワーク不要の回帰テスト
   （本リポジトリの `scripts/` に同一内容を配布）
 
-[distribution]: https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Template/blob/3312f003fbe9827090e20bc643800824bdf30e22/_documents/参照ソースのオンデマンド取得への配布手順.md
-[sync-script]: https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Template/blob/3312f003fbe9827090e20bc643800824bdf30e22/scripts/sync-reference.sh
-[sync-test]: https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Template/blob/3312f003fbe9827090e20bc643800824bdf30e22/scripts/test-sync-reference.sh
