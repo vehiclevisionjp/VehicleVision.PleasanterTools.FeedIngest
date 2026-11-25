@@ -5,9 +5,9 @@ RSS / Atom のフィードを取得し、記事を Pleasanter の列へ対応づ
 
 ## 現在の状態
 
-**取り込みの流れ（取得 → 解析 → 対応づけ → 外部キー照合 → 作成・更新）と、状態 DB による再実行・再開を実装した段階です。
+**インポートの流れ（取得 → 解析 → 対応づけ → 外部キー照合 → 作成・更新）と、状態 DB による再実行・再開を実装した段階です。
 フェイク通信の単体試験と一時 SQLite の試験だけで確認しており、実機 Pleasanter・実際のフィードでは未確認です。**
-先に `migrate` で状態 DB を作り、`ingest --config <設定ファイル>` で 1 回取り込んで終了します（[状態 DB](#状態-db)・[取り込み](#取り込み) を参照）。
+先に `migrate` で状態 DB を作り、`ingest --config <設定ファイル>` で 1 回インポートして終了します（[状態 DB](#状態-db)・[インポート](#インポート) を参照）。
 
 状態 DB（既定は SQLite）には、取得の検証子（ETag・Last-Modified）、記事のスナップショット、送信した値のハッシュを保存します。
 そのため、フィードが変わっていなければ 304 で済み、送る値が変わっていなければ Pleasanter の API を呼びません
@@ -19,7 +19,7 @@ RSS / Atom のフィードを取得し、記事を Pleasanter の列へ対応づ
 管理画面・スケジューラ・Docker 化は次の段階であり、現時点では提供しません。
 メール受信は別ツール MailIngest の範囲です。
 
-## 取り込み
+## インポート
 
 ```powershell
 dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest --config feedingest.json
@@ -30,11 +30,11 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 `--dry-run` は Pleasanter へ接続せず、取得・解析・対応づけまでを確認します。
 終了コードは 0＝全対象が成功または変更なし、1＝一部でも保留・失敗・未処理（排他を取れなかった場合を含む）、2＝使い方・設定の誤り、130＝中断です
 （想定外の例外は `[ERROR]` を出して 1 です）。
-出力は取り込み元ごとの件数だけで、URL・記事の内容・API キーは出しません。結果の行は `[INFO] source=<ID> created=… updated=… unchanged=… held=… failed=… pending=… mapped=…`
+出力はインポート元ごとの件数だけで、URL・記事の内容・API キーは出しません。結果の行は `[INFO] source=<ID> created=… updated=… unchanged=… held=… failed=… pending=… mapped=…`
 （実行を止めたときは `[INFO] stopped reason=<分類>`）の形で標準出力へ出します。`key=value` の部分は従来のままで、行頭に `[INFO]` の接頭辞が付きます。
 診断（`[WARN]`・`[ERROR]`）は標準エラーへ出します。メッセージは英語・ASCII です。
 `--json` を付けると、結果を 1 行の JSON（`command`・`ok`・`exitCode`・`errors`・`warnings` と、`dryRun`・`stoppedReason`・`sources`）で標準出力へ出します。
-取り込み先には、外部キー用に未使用の Class 列（選択肢なし）を 1 本確保してください。
+インポート先には、外部キー用に未使用の Class 列（選択肢なし）を 1 本確保してください。
 
 ## コマンドラインの書式
 
@@ -47,7 +47,7 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 | コマンド | 意味 | `--json` |
 | --- | --- | --- |
 | `check` | Pleasanter への接続確認 | 対応 |
-| `ingest --config <ファイル> [--dry-run]` | 設定ファイルに従って取り込む | 対応 |
+| `ingest --config <ファイル> [--dry-run]` | 設定ファイルに従ってインポートする | 対応 |
 | `migrate` | 状態 DB のマイグレーションを適用する | — |
 | `migrate-status` | 未適用のマイグレーションを表示する（未適用があれば終了コード 1） | 対応 |
 | `unlock` | 異常終了で残った実行の排他を解除する | — |
@@ -117,5 +117,5 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- check
 
 依存のライセンスは [NOTICE](NOTICE)、貢献と参照ソースの扱いは
 [ライセンス](_documents/ライセンス.md) に記載しています。
-貢献を取り込む前に CLA への署名が必要です。
+貢献をマージする前に CLA への署名が必要です。
 手続きは [貢献のしかた](CONTRIBUTING.md) と [CLA](CLA.md) を参照してください。

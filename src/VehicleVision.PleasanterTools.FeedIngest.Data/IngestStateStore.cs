@@ -5,7 +5,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Core.State;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Data;
 
-/// <summary>取り込み状態を RDBMS へ保管する。</summary>
+/// <summary>インポート状態を RDBMS へ保管する。</summary>
 /// <remarks>
 /// <para>SQL は <see cref="SqlDialect.Format"/> を通して書く（識別子は角括弧で囲む）。方言差を持ち込まない。
 /// 日時は <see cref="DbTime.ForDb"/> で書き、<see cref="DbTime.AsUtc(DateTime)"/> で読む。</para>
@@ -72,7 +72,7 @@ public sealed class IngestStateStore(IDbConnectionFactory connections, TimeProvi
     {
         if (!string.Equals(entry.SourceId, sourceId, StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("記事の取り込み元が、確定の取り込み元と一致しません。");
+            throw new InvalidOperationException("記事のインポート元が、確定のインポート元と一致しません。");
         }
 
         var key = ExternalKey.For(entry);

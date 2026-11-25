@@ -14,7 +14,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Cli.Tests;
 
-/// <summary>状態 DB（一時 SQLite の実 DB）を使う取り込みの試験。</summary>
+/// <summary>状態 DB（一時 SQLite の実 DB）を使うインポートの試験。</summary>
 public sealed class IngestRunnerStateTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "feedingest-state-tests-" + Guid.NewGuid().ToString("N"));
