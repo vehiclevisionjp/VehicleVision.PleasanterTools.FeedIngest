@@ -122,8 +122,8 @@ xunit.runner.visualstudio 4.0.1 / Apache-2.0
 一次情報と旧 xunit.abstractions の確認根拠は _documents/設計の参照情報.md を参照。
 
 開発用（実行環境へ配布しない）:
-markdownlint 0.42.0 / MIT
-katex 0.19.0 / MIT
+markdownlint 0.42.2 / MIT
+katex 0.19.1 / MIT
 - markdownlint — MIT: https://github.com/DavidAnson/markdownlint/blob/main/LICENSE
 - KaTeX（markdownlint の推移的依存）— MIT: https://github.com/KaTeX/KaTeX/blob/main/LICENSE
 その他の npm 推移依存も package-lock.json 上ではすべて MIT。
