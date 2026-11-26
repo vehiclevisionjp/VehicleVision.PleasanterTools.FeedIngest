@@ -68,6 +68,18 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- unlock 
 `migrate`・`migrate-status` の出力は共通部品 Core.Data のもので、適用済み・適用完了の行は `[OK]` で始まり、DB の待機などの進行表示は標準エラーへ出ます。
 設定が不正なときなど、Core.Data 由来の例外メッセージも英語・ASCII です。
 
+### 共通部品の移行が増える版へ更新するとき
+
+状態 DB の移行は、アプリ固有のものに加えて、共通部品 Core.Data の共有移行（`Core_` で始まる表）も `migrate` が適用します。
+Core.Data 0.3.0 を取り込んだ版へ更新すると、共有移行 M10008・M10009 が増えます。
+
+- M10008 は、空の表 `Core_AdminPasskeys`・`Core_AdminPasskeyChallenges` を作ります
+- M10009 は、`Core_AdminSessions` に NULL 可の `Via` 列を足します
+
+既存の行は書き換えません。公開 API の破壊的変更はありません。
+更新前に `migrate-status` で未適用の移行を確かめ、`migrate` で適用してください。
+`migrate` を実行する DB ユーザーには、表の作成と列の追加の権限が要ります（SQLite はファイルへの書き込み権限）。
+
 ## 接続確認
 
 `check` は、接続先の環境変数 `VVPT_PLEASANTER_BASE_URL` と `VVPT_PLEASANTER_API_KEY` を読みます
