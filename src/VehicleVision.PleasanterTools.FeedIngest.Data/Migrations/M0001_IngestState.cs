@@ -14,7 +14,7 @@ public sealed class M0001_IngestState : Migration
 {
     public override void Up()
     {
-        // 取り込み元ごとの取得状態。検証子は、解析・保存に成功してから進める
+        // インポート元ごとの取得状態。検証子は、解析・保存に成功してから進める
         Create.Table("Sources")
             .WithColumn("SourceId").AsString(64).NotNullable().PrimaryKey()
             .WithColumn("ConfigVersion").AsString(64).NotNullable()
@@ -60,7 +60,7 @@ public sealed class M0001_IngestState : Migration
             .OnColumn("DestinationId").Ascending()
             .OnColumn("State").Ascending();
 
-        // 取り込み実行の排他。ActiveToken は実行中だけ 'active'、終了後は実行 ID。
+        // インポート実行の排他。ActiveToken は実行中だけ 'active'、終了後は実行 ID。
         // 実行中の行を ActiveToken の一意制約で 1 つに絞る（NULL の扱いが RDBMS で違うため NULL を使わない）。
         // マイグレーションの排他（Core.Data の DatabaseMigrationLock）とは別物
         Create.Table("Runs")

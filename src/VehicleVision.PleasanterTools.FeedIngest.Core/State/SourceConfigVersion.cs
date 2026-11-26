@@ -7,7 +7,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Core.Configuration;
 namespace VehicleVision.PleasanterTools.FeedIngest.Core.State;
 
 /// <summary>
-/// 取り込み元の「取得の版」。URL と認証設定が変わったら変わり、保存済みの検証子（ETag／Last-Modified）を使わない根拠になる。
+/// インポート元の「取得の版」。URL と認証設定が変わったら変わり、保存済みの検証子（ETag／Last-Modified）を使わない根拠になる。
 /// </summary>
 /// <remarks>
 /// 秘密の値は含めない（秘密参照の名前・ヘッダ名だけ）。マッピングの版は含めない（それは <c>EntryMapper.Version</c>）。

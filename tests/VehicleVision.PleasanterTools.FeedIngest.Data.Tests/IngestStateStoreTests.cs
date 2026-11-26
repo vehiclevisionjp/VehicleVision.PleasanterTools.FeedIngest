@@ -7,7 +7,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Data;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Data.Tests;
 
-/// <summary>SQLite の一時 DB（実 DB）での、取り込み状態の試験。</summary>
+/// <summary>SQLite の一時 DB（実 DB）での、インポート状態の試験。</summary>
 public sealed class IngestStateStoreTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "feedingest-tests-" + Guid.NewGuid().ToString("N"));
@@ -88,7 +88,7 @@ public sealed class IngestStateStoreTests : IDisposable
     {
         var store = NewStore();
         await store.CommitFetchAsync(Commit(etag: "\"old\"", entries: Entry("a")));
-        // 2 件目の取り込み元が違う記事は、確定の途中で失敗する
+        // 2 件目のインポート元が違う記事は、確定の途中で失敗する
         var broken = Commit(etag: "\"new\"", entries: [Entry("b"), Entry("c", source: "other")]);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => store.CommitFetchAsync(broken));

@@ -6,7 +6,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Core.Mapping;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
 
-/// <summary>1 記事の取り込みの結果。</summary>
+/// <summary>1 記事のインポートの結果。</summary>
 public enum UpsertOutcome
 {
     /// <summary>新規に作成した（応答不明からの照合で確認した場合を含む）。</summary>
@@ -37,7 +37,7 @@ public enum UpsertOutcome
     BudgetExhausted,
 }
 
-/// <summary>取り込み結果。理由に本文・API キー・Pleasanter のメッセージを含めない。</summary>
+/// <summary>インポート結果。理由に本文・API キー・Pleasanter のメッセージを含めない。</summary>
 /// <param name="Outcome">結果。</param>
 /// <param name="RecordId">対象のレコード ID（分かれば）。</param>
 /// <param name="Reason">理由（保留・失敗のとき）。</param>
@@ -72,7 +72,7 @@ public sealed record UpsertOptions
 /// <para>書き込みの 5xx・408・429・通信断・Id の無い成功応答は、適用済みかもしれないので Unknown として、
 /// 外部キーで照合し直す（初回＋最大 3 回、1/2/4 秒）。0 件のままなら保留にし、Create を自動で再送しない。</para>
 /// <para>永続状態を持たないため「前回送った値」を知らない。既存の所有列が対応づけ後の値と違えば更新する
-/// （利用者が所有列を編集していれば、実行のたびに取り込み値へ戻る。設計 U5 の
+/// （利用者が所有列を編集していれば、実行のたびにインポート値へ戻る。設計 U5 の
 /// 「送信対象が変わったときだけ上書き」には、状態を保存する Data の実装が必要）。</para>
 /// <para>確認した Pleasanter ソースは 1.5.9.1（664c833b144d9da9b6bb58e60f7e48eb01141e58）。実機では未確認。</para>
 /// </remarks>

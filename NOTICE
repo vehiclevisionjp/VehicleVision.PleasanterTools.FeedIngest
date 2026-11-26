@@ -3,7 +3,7 @@ Copyright (C) PMC Co., Ltd. IT Solution Div.
 SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-PMC-Commercial
 
 RSS / Atom の取得と Pleasanter への作成・更新を目的とする。
-2026-10-22 現在は基盤実装段階。取り込み機能は未実装。
+2026-10-22 現在は基盤実装段階。インポート機能は未実装。
 FeedIngest は AGPL-3.0-or-later と商用ライセンスのデュアルで提供する（LICENSING.md）。
 
 開発運用と Actions の構成、および指示同期・参照更新スクリプトは次を参考にしています。

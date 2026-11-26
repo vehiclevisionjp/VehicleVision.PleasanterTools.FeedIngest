@@ -12,7 +12,7 @@ public enum FeedFetchErrorKind
     /// <summary>429、または待機指定が長すぎる。次回へ回す。</summary>
     RateLimit,
 
-    /// <summary>401・403。取り込み元を停止し、人が直す。</summary>
+    /// <summary>401・403。インポート元を停止し、人が直す。</summary>
     Authentication,
 
     /// <summary>その他の非成功ステータス（404 等の 4xx、再試行を使い切った 5xx）。</summary>
@@ -58,7 +58,7 @@ public sealed record FeedFetchOptions
     /// <summary>1 要求（本文読取を含む）の時間。</summary>
     public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(30);
 
-    /// <summary>1 取り込み元の取得全体（再試行・待機・リダイレクトを含む）の時間。</summary>
+    /// <summary>1 インポート元の取得全体（再試行・待機・リダイレクトを含む）の時間。</summary>
     public TimeSpan TotalTimeout { get; init; } = TimeSpan.FromSeconds(120);
 
     public int MaxRedirects { get; init; } = 5;

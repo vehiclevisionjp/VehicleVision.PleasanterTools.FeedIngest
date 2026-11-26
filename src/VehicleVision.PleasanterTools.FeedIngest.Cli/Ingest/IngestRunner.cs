@@ -8,7 +8,7 @@ using VehicleVision.PleasanterTools.FeedIngest.Pleasanter;
 
 namespace VehicleVision.PleasanterTools.FeedIngest.Cli.Ingest;
 
-/// <summary>取り込み元 1 つの結果。記事の本文・元 ID・URL を含めない。</summary>
+/// <summary>インポート元 1 つの結果。記事の本文・元 ID・URL を含めない。</summary>
 public sealed class SourceReport(string sourceId)
 {
     public string SourceId { get; } = sourceId;
@@ -31,10 +31,10 @@ public sealed class SourceReport(string sourceId)
     /// <summary>dry-run で対応づけまで成功した記事。</summary>
     public int Mapped { get; set; }
 
-    /// <summary>取り込み元全体の失敗の分類（取得・解析・設定）。無ければ <c>null</c>。</summary>
+    /// <summary>インポート元全体の失敗の分類（取得・解析・設定）。無ければ <c>null</c>。</summary>
     public string? Error { get; set; }
 
-    /// <summary>実行が止まったため、この取り込み元は処理しなかった。</summary>
+    /// <summary>実行が止まったため、このインポート元は処理しなかった。</summary>
     public bool NotProcessed { get; set; }
 
     public bool IsClean => Error is null && !NotProcessed && Held == 0 && Failed == 0 && Pending == 0;
@@ -50,17 +50,17 @@ public sealed record IngestReport(IReadOnlyList<SourceReport> Sources, string? S
 }
 
 /// <summary>
-/// 取り込み元ごとに、取得→解析→対応づけ→外部キー照合→作成／更新を行う。
+/// インポート元ごとに、取得→解析→対応づけ→外部キー照合→作成／更新を行う。
 /// </summary>
 /// <remarks>
 /// <para>1 記事の失敗は他の記事を止めない。認証失敗・回数制限・予算切れは、共有する送り先に対する
-/// 停止事由なので、残りの記事と取り込み元を処理しない（未処理として報告し、成功に数えない）。</para>
+/// 停止事由なので、残りの記事とインポート元を処理しない（未処理として報告し、成功に数えない）。</para>
 /// <para><b>状態（<paramref name="state"/>）がある場合</b>（dry-run 以外の通常実行）:
 /// 開始時に実行の排他を取り（取れなければ何もせず非ゼロ）、前回送信中のまま残った配送を Unknown に戻す。
 /// 取得は保存済みの検証子で条件付きにし、<b>解析・保存に成功してから</b>検証子を進める（200 を受けただけでは進めない）。
 /// 配送は、保存済みの記事のスナップショットから、取得とは独立に処理する（304 でも、取得に失敗しても、未送信は再開する）。
 /// 前回送った値ハッシュと対応づけの版が同じなら API を呼ばない（利用者が所有列を編集していても、毎回は戻さない。U5）。</para>
-/// <para>状態が無い場合は、毎回取得し、既存レコードの所有列が取り込み値と違えば更新する。</para>
+/// <para>状態が無い場合は、毎回取得し、既存レコードの所有列がインポート値と違えば更新する。</para>
 /// </remarks>
 public sealed class IngestRunner(
     FeedIngestConfiguration configuration,
@@ -151,7 +151,7 @@ public sealed class IngestRunner(
         return new IngestReport(reports, stoppedBy);
     }
 
-    /// <summary>1 つの取り込み元を処理する。実行全体を止める事由があれば、その分類を返す。</summary>
+    /// <summary>1 つのインポート元を処理する。実行全体を止める事由があれば、その分類を返す。</summary>
     private async Task<string?> ProcessAsync(
         SourceConfiguration source, SourceReport report, bool dryRun, IIngestStateStore? store, CancellationToken token)
     {

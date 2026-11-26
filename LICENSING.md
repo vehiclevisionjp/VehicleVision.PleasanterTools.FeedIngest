@@ -72,8 +72,8 @@ AGPL の義務（ソースコード開示・コピーレフト）を負わずに
 **著作権者である株式会社ピー・エム・シー ITソリューション事業部が自由に決定できます。
 これがデュアルライセンスを成立させている前提です。**
 
-> **AGPL 側だけを見て「どうせ AGPL なのだから本体を取り込んでもよい」と考えないこと。**
-> Pleasanter の著作権は当社にないため、**取り込んだ瞬間に B（商用ライセンス）を
+> **AGPL 側だけを見て「どうせ AGPL なのだから本体を組み込んでもよい」と考えないこと。**
+> Pleasanter の著作権は当社にないため、**組み込んだ瞬間に B（商用ライセンス）を
 > 提供できなくなります。** デュアルの片方が壊れます。
 
 <!-- license:begin pleasanter-note=free -->
@@ -83,7 +83,7 @@ AGPL の義務（ソースコード開示・コピーレフト）を負わずに
 - `scripts/reference-isolation-check.sh`（CI で実行）が、`src`・`tests` の `.cs`・`.csproj` とビルド定義に
   `Implem.` と `_reference` への参照が無いことを検査します。`_reference/` に取得する本体は Git で追跡せず、
   配布 ZIP からも除外します（`scripts/package.ps1`）。規約は [`.github/copilot-instructions.md`](.github/copilot-instructions.md) の規約 6 にあります
-- 現時点の実装は、DotNetClient で Pleasanter の標準 Web API を呼ぶ取り込み（外部キーでの検索・作成・更新）と接続確認です。
+- 現時点の実装は、DotNetClient で Pleasanter の標準 Web API を呼ぶインポート（外部キーでの検索・作成・更新）と接続確認です。
   取得状態を保持する DB（`.Data`）は未実装で、設計では FeedIngest 専用の DB とし、Pleasanter の DB とは別にします
   （[`_documents/アーキテクチャ方針.md`](_documents/アーキテクチャ方針.md)）
 <!-- license:end pleasanter-note -->
@@ -173,7 +173,7 @@ VehicleVision.PleasanterTools の各ツールと、当社の共通部品（Core�
 **デュアルライセンスを保つには、貢献者からの許諾が要る。**
 他人の著作物を商用ライセンスで再頒布する権利は、その人から貰わない限り無い。
 
-**署名のない貢献を 1 つでも取り込むと、その部分だけ商用ライセンスで提供できなくなる。**
+**署名のない貢献を 1 つでもマージすると、その部分だけ商用ライセンスで提供できなくなる。**
 後から気付いても、当人全員から同意を集め直すか、該当コードを書き直すしかない。
 
 手続きは [`CLA.md`](CLA.md) と [`CONTRIBUTING.md`](CONTRIBUTING.md) を参照してください。

@@ -1,7 +1,7 @@
 namespace VehicleVision.PleasanterTools.FeedIngest.Core.State;
 
-/// <summary>取り込み元の取得状態。検証子は、解析・保存に成功してから進める。</summary>
-/// <param name="SourceId">取り込み元の安定 ID。</param>
+/// <summary>インポート元の取得状態。検証子は、解析・保存に成功してから進める。</summary>
+/// <param name="SourceId">インポート元の安定 ID。</param>
 /// <param name="ConfigVersion">URL・認証設定の版（秘密そのものは含めない）。変わったら検証子は使わない。</param>
 /// <param name="ETag">引用符・弱いタグを含めたまま保存した ETag。</param>
 /// <param name="LastModified">Last-Modified。</param>
@@ -10,7 +10,7 @@ public sealed record SourceState(
     string SourceId, string ConfigVersion, string? ETag, DateTimeOffset? LastModified, DateTimeOffset? FetchedAt);
 
 /// <summary>保存済みの記事（正規化後のスナップショット）。</summary>
-/// <param name="SourceId">取り込み元の ID。</param>
+/// <param name="SourceId">インポート元の ID。</param>
 /// <param name="ExternalKey">外部キー（<see cref="Mapping.ExternalKey"/>）。</param>
 /// <param name="Entry">正規化済みの記事。</param>
 /// <param name="ContentHash">内容のハッシュ（正規化記事の決定的な JSON の SHA-256）。</param>
@@ -55,7 +55,7 @@ public enum DeliveryState
 /// <summary>配送の記録。<c>(DestinationId, SiteId, ExternalKey)</c> で一意。</summary>
 /// <param name="DestinationId">送り先の安定 ID（設定の <c>pleasanter.id</c>）。</param>
 /// <param name="SiteId">送り先のサイト。</param>
-/// <param name="SourceId">取り込み元の ID。</param>
+/// <param name="SourceId">インポート元の ID。</param>
 /// <param name="ExternalKey">外部キー。</param>
 /// <param name="RecordId">Pleasanter のレコード ID（分かれば）。</param>
 /// <param name="MappingVersion">最後に送った時の対応づけ設定の版。</param>
@@ -91,10 +91,10 @@ public sealed record DeliverySave(
     string? LastOutcome,
     bool CountAttempt);
 
-/// <summary>取り込み実行の排他（同じ DB を使う全 CLI で 1 つ）。</summary>
+/// <summary>インポート実行の排他（同じ DB を使う全 CLI で 1 つ）。</summary>
 public sealed record RunLease(Guid Id, string OwnerId, DateTimeOffset StartedAt);
 
-/// <summary>取り込みの状態（取得状態・記事のスナップショット・配送・実行排他）の保存先。</summary>
+/// <summary>インポートの状態（取得状態・記事のスナップショット・配送・実行排他）の保存先。</summary>
 public interface IIngestStateStore
 {
     Task<SourceState?> GetSourceAsync(string sourceId, CancellationToken cancellationToken = default);

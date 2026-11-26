@@ -17,7 +17,7 @@ namespace VehicleVision.PleasanterTools.FeedIngest.Feeds;
 public static class FeedParser
 {
     /// <param name="content">取得した本文（圧縮は解除済み）。</param>
-    /// <param name="sourceId">取り込み元の安定 ID。</param>
+    /// <param name="sourceId">インポート元の安定 ID。</param>
     /// <param name="feedUrl">最終取得 URL（相対 URI の解決の基準。絶対 http／https）。</param>
     /// <param name="expectedFormat">設定の形式。<see cref="FeedFormat.Auto"/> は 2 形式から判定する。</param>
     /// <param name="httpCharset">Content-Type の charset。無ければ <c>null</c>。</param>
