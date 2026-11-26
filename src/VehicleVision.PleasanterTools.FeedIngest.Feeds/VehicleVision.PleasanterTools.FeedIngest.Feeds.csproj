@@ -2,4 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\VehicleVision.PleasanterTools.FeedIngest.Core\VehicleVision.PleasanterTools.FeedIngest.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="VehicleVision.PleasanterTools.FeedIngest.Feeds.Tests" />
+  </ItemGroup>
 </Project>

@@ -7,7 +7,8 @@ namespace VehicleVision.PleasanterTools.FeedIngest.Feeds;
 /// 取得先として許す IP アドレスか判定する（SSRF 対策）。loopback・link-local・プライベート宛などを拒否する。
 /// </summary>
 /// <remarks>
-/// 内部ホストを管理者が明示許可する設定（U11）は、設定の形が未決定のためまだ持たない。常に拒否する。
+/// <see cref="IsAllowed"/> は「許可リストなし」の判定（公開アドレスだけ許す）。内部ホストの明示許可（U11）は
+/// <see cref="DestinationPolicy"/>（source ごとの許可リスト）が、このクラスの公開アドレス判定に上乗せして行う。
 /// </remarks>
 public static class DestinationGuard
 {
@@ -57,11 +58,20 @@ public static class DestinationGuard
             || b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0D && b[3] == 0xB8);  // 2001:db8::/32
 
     /// <summary>名前を解決し、全アドレスが許可されるときだけ返す。1 つでも不許可なら拒否する。</summary>
-    public static async Task<IReadOnlyList<IPAddress>> ResolveAllowedAsync(
+    public static Task<IReadOnlyList<IPAddress>> ResolveAllowedAsync(
         string host,
         Func<string, CancellationToken, Task<IPAddress[]>> resolver,
         CancellationToken cancellationToken)
+        => ResolveAllowedAsync(host, resolver, DestinationPolicy.Default, cancellationToken);
+
+    /// <summary>名前を解決し、全アドレスが <paramref name="policy"/> で許可されるときだけ返す。1 つでも不許可なら拒否する。</summary>
+    public static async Task<IReadOnlyList<IPAddress>> ResolveAllowedAsync(
+        string host,
+        Func<string, CancellationToken, Task<IPAddress[]>> resolver,
+        DestinationPolicy policy,
+        CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(policy);
         IPAddress[] addresses;
         if (IPAddress.TryParse(host.Trim('[', ']'), out var literal))
         {
@@ -84,7 +94,7 @@ public static class DestinationGuard
             throw new FeedFetchException(FeedFetchErrorKind.Transport, null, "名前を解決できません。");
         }
 
-        if (addresses.Any(address => !IsAllowed(address)))
+        if (addresses.Any(address => !policy.IsAllowed(host, address)))
         {
             throw new FeedFetchException(
                 FeedFetchErrorKind.Destination, null, "取得先が許可されないアドレス（内部・予約）を指しています。");
