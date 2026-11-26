@@ -102,6 +102,36 @@ public sealed class CliContractTest : CliContractTests, IDisposable
                     Name = "check with a bad base url keeps secrets", Args = ["check"], Outcome = CliOutcome.UsageError,
                     Environment = secretEnvironment, Secrets = ["secret-value"],
                 },
+                new CliScenario { Name = "validate without config", Args = ["validate"], Outcome = CliOutcome.UsageError },
+                new CliScenario
+                {
+                    Name = "validate with a missing file json", Args = ["validate", "--config", Path.Combine(_directory, "missing.json"), "--json"],
+                    Outcome = CliOutcome.UsageError, Json = CliJsonKind.Result, Command = "validate",
+                },
+                new CliScenario
+                {
+                    Name = "validate with a bad configuration", Args = ["validate", "--config", badSchema], Outcome = CliOutcome.CheckFailed,
+                },
+                new CliScenario
+                {
+                    Name = "validate with a bad configuration json", Args = ["validate", "--config", badSchema, "--json"],
+                    Outcome = CliOutcome.CheckFailed, Json = CliJsonKind.Result, Command = "validate",
+                },
+                new CliScenario
+                {
+                    Name = "validate with an unresolved secret", Args = ["validate", "--config", loopback, "--check-secrets"],
+                    Outcome = CliOutcome.CheckFailed,
+                },
+                new CliScenario
+                {
+                    Name = "validate", Args = ["validate", "--config", loopback, "--check-secrets"], Outcome = CliOutcome.Success,
+                    Environment = loopbackEnvironment, Secrets = ["secret-value"], RequiresOkLine = true,
+                },
+                new CliScenario
+                {
+                    Name = "validate json", Args = ["validate", "--config", loopback, "--check-secrets", "--json"], Outcome = CliOutcome.Success,
+                    Environment = loopbackEnvironment, Secrets = ["secret-value"], Json = CliJsonKind.Result, Command = "validate",
+                },
                 new CliScenario { Name = "ingest without config", Args = ["ingest"], Outcome = CliOutcome.UsageError },
                 new CliScenario
                 {

@@ -31,6 +31,18 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 ```
 
 設定ファイルの形は [対応づけ設定](_documents/対応づけ設定.md) を参照してください（秘密は環境変数名で参照します）。
+定期実行へ登録する前に、通信せずに設定ファイルを検証できます（状態 DB にも Pleasanter にも触れません）。
+
+```powershell
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- validate --config feedingest.json
+dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- validate --config feedingest.json --check-secrets
+```
+
+`--check-secrets` は、設定が参照する秘密（環境変数・`_FILE`）が解決できることだけを確かめます（変数名だけを報告し、値・パスは出しません）。
+設定の誤り（行とキーつき）と、解決できない秘密は、検査の結果として標準出力へ出し、終了コードは 1 です。
+設定ファイルが読めない・使い方の誤りは、検査を始められないので標準エラーへ出し、終了コードは 2 です。問題がなければ 0 です。
+成功したときの出力は、インポート元の ID・siteId・mode・対応づけ件数だけで、URL・秘密は出しません。
+`--json` を付けると、`command`・`ok`・`exitCode`・`errors`・`warnings` と、`checked`（`sources`・`secrets`）を 1 行の JSON で出します。
 `--dry-run` は Pleasanter へ接続せず、取得・解析・対応づけまでを確認します。
 終了コードは 0＝全対象が成功または変更なし、1＝一部でも保留・失敗・未処理（排他を取れなかった場合を含む）、2＝使い方・設定の誤り、130＝中断です
 （想定外の例外は `[ERROR]` を出して 1 です）。
@@ -51,6 +63,7 @@ dotnet run --project src\VehicleVision.PleasanterTools.FeedIngest.Cli -- ingest 
 | コマンド | 意味 | `--json` |
 | --- | --- | --- |
 | `check` | Pleasanter への接続確認 | 対応 |
+| `validate --config <ファイル> [--check-secrets]` | 設定ファイルを通信せずに検証する（問題があれば終了コード 1） | 対応 |
 | `ingest --config <ファイル> [--dry-run]` | 設定ファイルに従ってインポートする | 対応 |
 | `migrate` | 状態 DB のマイグレーションを適用する | — |
 | `migrate-status` | 未適用のマイグレーションを表示する（未適用があれば終了コード 1） | 対応 |
