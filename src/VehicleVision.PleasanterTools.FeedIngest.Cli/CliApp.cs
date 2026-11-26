@@ -56,13 +56,19 @@ public static class CliApp
         Description = "Fetch, parse and map only. Connect to neither Pleasanter nor the state database.",
     };
 
+    private static readonly OptionSpec ResendUnconfirmedOption = new()
+    {
+        Name = "resend-unconfirmed",
+        Description = "Allow Create for deliveries whose earlier create result is unconfirmed. Use only after confirming the request was not applied.",
+    };
+
     public static ToolSpec Tool { get; } = new(
         ToolName,
         "Fetch RSS / Atom feeds and create or update Pleasanter records.",
         ToolVersion(),
         [
             new CommandSpec(CheckCommand, "Check the connection to Pleasanter.", [StandardOptions.Json]),
-            new CommandSpec(IngestCommand, "Ingest the feeds described in a configuration file.", [ConfigOption, DryRunOption, StandardOptions.Json]),
+            new CommandSpec(IngestCommand, "Ingest the feeds described in a configuration file.", [ConfigOption, DryRunOption, ResendUnconfirmedOption, StandardOptions.Json]),
             new CommandSpec(MigrateCommand, "Apply the pending migrations to the state database.", []),
             new CommandSpec(MigrateStatusCommand, "Show the pending migrations (exit code 1 if any).", [StandardOptions.Json]),
             new CommandSpec(UnlockCommand, "Release a run lock left by an abnormal exit (only when no other run is active).", []),
@@ -261,8 +267,15 @@ public static class CliApp
     {
         var json = context.Options.Flag(StandardOptions.JsonName);
         var dryRun = context.Options.Flag(DryRunOption.Name);
+        var resendUnconfirmed = context.Options.Flag(ResendUnconfirmedOption.Name);
         var path = context.Options.Value(ConfigOption.Name)!;
         var environment = context.GetEnvironmentVariable;
+        if (dryRun && resendUnconfirmed)
+        {
+            return Fail(
+                context, IngestCommand, json, ExitCodeValues.UsageError, ErrorCodes.Usage,
+                "--resend-unconfirmed cannot be combined with --dry-run. Try --help for usage.");
+        }
 
         FeedIngestConfiguration configuration;
         try
@@ -324,7 +337,8 @@ public static class CliApp
                 environment,
                 json ? null : context.Output,
                 stateStore,
-                $"{Environment.ProcessId}@{Environment.MachineName}");
+                $"{Environment.ProcessId}@{Environment.MachineName}",
+                resendUnconfirmed: resendUnconfirmed);
             var report = await runner.RunAsync(dryRun, token).ConfigureAwait(false);
             return Report(context, report, dryRun, json);
         }
@@ -430,6 +444,7 @@ public static class CliApp
         writer.WriteNumber("updated", source.Updated);
         writer.WriteNumber("unchanged", source.Unchanged);
         writer.WriteNumber("held", source.Held);
+        writer.WriteNumber("unconfirmed", source.Unconfirmed);
         writer.WriteNumber("failed", source.Failed);
         writer.WriteNumber("pending", source.Pending);
         writer.WriteNumber("mapped", source.Mapped);
