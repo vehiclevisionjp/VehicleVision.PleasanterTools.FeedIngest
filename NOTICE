@@ -39,8 +39,8 @@ https://github.com/xunit/visualstudio.xunit/blob/main/License.txt
 coverlet.collector — MIT
 https://github.com/coverlet-coverage/coverlet/blob/master/LICENSE
 
-配布物に含む依存（直接: VehicleVision.PleasanterTools.Core.Data・Core.Cli・Core.Contracts。それ以外はこれが推移的に伴うもの。net10.0、参照日: 2026-11-02）:
-Dapper 2.1.89 / Apache-2.0
+配布物に含む依存（直接: VehicleVision.PleasanterTools.Core.Data・Core.Cli・Core.Contracts。それ以外はこれが推移的に伴うもの。net10.0、参照日: 2026-11-26）:
+Dapper 2.1.100 / Apache-2.0
 FluentMigrator 8.0.1 / Apache-2.0
 FluentMigrator.Abstractions 8.0.1 / Apache-2.0
 FluentMigrator.Extensions.MySql 8.0.1 / Apache-2.0
@@ -51,22 +51,22 @@ FluentMigrator.Runner.MySql 8.0.1 / Apache-2.0
 FluentMigrator.Runner.Postgres 8.0.1 / Apache-2.0
 FluentMigrator.Runner.SQLite 8.0.1 / Apache-2.0
 FluentMigrator.Runner.SqlServer 8.0.1 / Apache-2.0
-Microsoft.Bcl.Cryptography 9.0.18 / MIT
-Microsoft.Data.SqlClient 7.1.1 / MIT
-Microsoft.Data.SqlClient.Extensions.Abstractions 7.1.1 / MIT
-Microsoft.Data.SqlClient.Internal.Logging 7.1.1 / MIT
-Microsoft.Data.SqlClient.SNI.runtime 7.1.0 / Microsoft Software License Terms（MICROSOFT.DATA.SQLCLIENT.SNI LIBRARY）
-Microsoft.Data.Sqlite 10.0.14 / MIT
-Microsoft.Data.Sqlite.Core 10.0.14 / MIT
-Microsoft.Extensions.Caching.Abstractions 9.0.18 / MIT
-Microsoft.Extensions.Caching.Memory 9.0.18 / MIT
+Microsoft.Bcl.Cryptography 9.0.21 / MIT
+Microsoft.Data.SqlClient 7.1.2 / MIT
+Microsoft.Data.SqlClient.Extensions.Abstractions 7.1.2 / MIT
+Microsoft.Data.SqlClient.Internal.Logging 7.1.2 / MIT
+Microsoft.Data.SqlClient.SNI.runtime 7.1.2 / Microsoft Software License Terms（MICROSOFT.DATA.SQLCLIENT.SNI LIBRARY）
+Microsoft.Data.Sqlite 10.0.15 / MIT
+Microsoft.Data.Sqlite.Core 10.0.15 / MIT
+Microsoft.Extensions.Caching.Abstractions 9.0.21 / MIT
+Microsoft.Extensions.Caching.Memory 9.0.21 / MIT
 Microsoft.Extensions.Configuration.Abstractions 8.0.0 / MIT
-Microsoft.Extensions.DependencyInjection 10.0.14 / MIT
-Microsoft.Extensions.DependencyInjection.Abstractions 10.0.14 / MIT
+Microsoft.Extensions.DependencyInjection 10.0.15 / MIT
+Microsoft.Extensions.DependencyInjection.Abstractions 10.0.15 / MIT
 Microsoft.Extensions.Logging 8.0.0 / MIT
-Microsoft.Extensions.Logging.Abstractions 10.0.0 / MIT
-Microsoft.Extensions.Options 9.0.18 / MIT
-Microsoft.Extensions.Primitives 9.0.18 / MIT
+Microsoft.Extensions.Logging.Abstractions 10.0.15 / MIT
+Microsoft.Extensions.Options 9.0.21 / MIT
+Microsoft.Extensions.Primitives 9.0.21 / MIT
 Microsoft.IdentityModel.Abstractions 8.16.0 / MIT
 Microsoft.IdentityModel.JsonWebTokens 8.16.0 / MIT
 Microsoft.IdentityModel.Logging 8.16.0 / MIT
@@ -74,23 +74,23 @@ Microsoft.IdentityModel.Protocols 8.16.0 / MIT
 Microsoft.IdentityModel.Protocols.OpenIdConnect 8.16.0 / MIT
 Microsoft.IdentityModel.Tokens 8.16.0 / MIT
 Microsoft.SqlServer.Server 1.0.0 / MIT
-MySqlConnector 2.6.2 / MIT
-Npgsql 10.0.3 / PostgreSQL
+MySqlConnector 3.0.0 / MIT
+Npgsql 10.0.4 / PostgreSQL
 SQLitePCLRaw.bundle_e_sqlite3 2.1.13 / Apache-2.0
 SQLitePCLRaw.core 2.1.13 / Apache-2.0
 SQLitePCLRaw.lib.e_sqlite3 2.1.13 / Apache-2.0
 SQLitePCLRaw.provider.e_sqlite3 2.1.13 / Apache-2.0
 System.ComponentModel.Annotations 5.0.0 / MIT
-System.Configuration.ConfigurationManager 9.0.18 / MIT
-System.Diagnostics.EventLog 9.0.18 / MIT
+System.Configuration.ConfigurationManager 9.0.21 / MIT
+System.Diagnostics.EventLog 9.0.21 / MIT
 System.IdentityModel.Tokens.Jwt 8.16.0 / MIT
-System.Security.Cryptography.Pkcs 10.0.14 / MIT
-System.Security.Cryptography.ProtectedData 9.0.18 / MIT
-System.Threading.RateLimiting 9.0.18 / MIT
+System.Security.Cryptography.Pkcs 10.0.15 / MIT
+System.Security.Cryptography.ProtectedData 9.0.21 / MIT
+System.Threading.RateLimiting 9.0.21 / MIT
 System.ValueTuple 4.6.1 / MIT
-VehicleVision.PleasanterTools.Core.Cli 0.2.0 / AGPL-3.0-or-later または商用（自社）
-VehicleVision.PleasanterTools.Core.Contracts 0.2.0 / AGPL-3.0-or-later または商用（自社）
-VehicleVision.PleasanterTools.Core.Data 0.2.0 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Cli 0.3.0 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Contracts 0.3.0 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Data 0.3.0 / AGPL-3.0-or-later または商用（自社）
 VehicleVision.PleasanterTools.DotNetClient 0.5.0 / LGPL-3.0-or-later OR AGPL-3.0-or-later OR 商用（自社）
 
 VehicleVision.PleasanterTools.Core.Cli・Core.Contracts・Core.Data は、当社の共通部品 Core（CLI の共通部品・共通の名前と値・DB の基盤）で、AGPL-3.0-or-later と商用のデュアルライセンスです
@@ -98,7 +98,7 @@ VehicleVision.PleasanterTools.Core.Cli・Core.Contracts・Core.Data は、当社
 https://github.com/vehiclevisionjp/VehicleVision.PleasanterTools.Core
 Microsoft.Data.SqlClient.SNI.runtime（Windows 向けのネイティブ SNI）は Microsoft 独自の許諾で、
 条件は LICENSING.md の「例外: Microsoft.Data.SqlClient.SNI.runtime」の節と LICENSE-COMMERCIAL.md に記載しています。
-Core.Data 0.2.0 は 4 方言（SQL Server・PostgreSQL・MySQL・SQLite）のランナーと FluentMigrator.Runner.Core に依存し、IBM Db2・Firebird のドライバは伴いません。
+Core.Data 0.3.0 は 4 方言（SQL Server・PostgreSQL・MySQL・SQLite）のランナーと FluentMigrator.Runner.Core に依存し、IBM Db2・Firebird のドライバは伴いません。
 Core.Data の依存の版は、各 packages.lock.json に記録しています（上の表記は一次情報の nuspec による）。
 
 テスト用の直接・推移依存の全閉包（配布物に含まない。net10.0、参照日: 2026-11-01）:
@@ -107,7 +107,7 @@ Microsoft.CodeCoverage 18.12.0 / MIT
 Microsoft.NET.Test.Sdk 18.12.0 / MIT
 Microsoft.TestPlatform.ObjectModel 18.12.0 / MIT
 Microsoft.TestPlatform.TestHost 18.12.0 / MIT
-VehicleVision.PleasanterTools.Core.Cli.Testing 0.2.0 / AGPL-3.0-or-later または商用（自社）
+VehicleVision.PleasanterTools.Core.Cli.Testing 0.3.0 / AGPL-3.0-or-later または商用（自社）
 xunit 2.9.3 / Apache-2.0
 xunit.abstractions 2.0.3 / Apache-2.0
 xunit.analyzers 1.18.0 / Apache-2.0
