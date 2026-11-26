@@ -181,6 +181,27 @@ public sealed class CliAppTests
     }
 
     [Fact]
+    public async Task validateは許可リストの誤りを行とキーつきで報告し_通信しない()
+    {
+        // 広すぎる範囲（/8 未満）は設定の検査で拒否される。ingest と同じ検査が validate にも効く
+        var path = WriteConfig(ValidConfig.Replace(
+            "\"http\": {\"authentication\": {\"type\": \"none\"}}",
+            "\"http\": {\"authentication\": {\"type\": \"none\"}, \"allowedNetworks\": [\"10.0.0.0/7\"], \"allowedHosts\": [\"feeds.corp.example\"]}",
+            StringComparison.Ordinal));
+        try
+        {
+            var (code, output, _) = await RunAsync(["validate", "--config", path]);
+
+            Assert.Equal(1, code);
+            Assert.Contains("allowedNetworks", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task 許可リストが空なら警告を出さない()
     {
         var path = WriteConfig(ValidConfig);

@@ -65,10 +65,17 @@ public sealed class FeedFetcher : IDisposable
     /// このインスタンスが所有する。接続のプールを source 間で共有しないので、許可が他の source へ漏れない。
     /// </summary>
     public static FeedFetcher CreateDefault(FeedFetchOptions options, DestinationPolicy policy)
+        => CreateDefault(options, policy, null);
+
+    /// <summary>試験用。事前の検査と接続時の検査の両方が使う名前解決を差し替える（DNS リバインディングの試験）。</summary>
+    internal static FeedFetcher CreateDefault(
+        FeedFetchOptions options,
+        DestinationPolicy policy,
+        Func<string, CancellationToken, Task<IPAddress[]>>? resolver)
     {
         ArgumentNullException.ThrowIfNull(policy);
-        var handler = CreateDefaultHandler(policy);
-        return new FeedFetcher(handler, handler, options, null, null, policy);
+        var handler = CreateDefaultHandler(policy, resolver);
+        return new FeedFetcher(handler, handler, options, resolver, null, policy);
     }
 
     public void Dispose()
@@ -84,14 +91,19 @@ public sealed class FeedFetcher : IDisposable
     public static SocketsHttpHandler CreateDefaultHandler() => CreateDefaultHandler(DestinationPolicy.Default);
 
     /// <summary>接続時の宛先検査に <paramref name="policy"/> を使うハンドラー。</summary>
-    public static SocketsHttpHandler CreateDefaultHandler(DestinationPolicy policy) => new()
+    public static SocketsHttpHandler CreateDefaultHandler(DestinationPolicy policy) => CreateDefaultHandler(policy, null);
+
+    /// <summary>試験用。接続時の検査が使う名前解決を差し替える。省略時は DNS（本番と同じ）。</summary>
+    internal static SocketsHttpHandler CreateDefaultHandler(
+        DestinationPolicy policy,
+        Func<string, CancellationToken, Task<IPAddress[]>>? resolver) => new()
     {
         AllowAutoRedirect = false,
         UseCookies = false,
         UseProxy = false,
         AutomaticDecompression = DecompressionMethods.None,
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-        ConnectCallback = (context, token) => ConnectGuardedAsync(context, policy, token),
+        ConnectCallback = (context, token) => ConnectGuardedAsync(context, policy, resolver ?? DefaultResolver, token),
     };
 
     /// <summary>フィードを取得する。</summary>
@@ -485,10 +497,14 @@ public sealed class FeedFetcher : IDisposable
         => await Dns.GetHostAddressesAsync(host, token).ConfigureAwait(false);
 
     private static async ValueTask<Stream> ConnectGuardedAsync(
-        SocketsHttpConnectionContext context, DestinationPolicy policy, CancellationToken token)
+        SocketsHttpConnectionContext context,
+        DestinationPolicy policy,
+        Func<string, CancellationToken, Task<IPAddress[]>> resolver,
+        CancellationToken token)
     {
+        // ここで解決して検査した一覧にだけ接続する。接続のために再び名前を解決しない（解決の差し替えを防ぐ）
         var addresses = await DestinationGuard
-            .ResolveAllowedAsync(context.DnsEndPoint.Host, DefaultResolver, policy, token).ConfigureAwait(false);
+            .ResolveAllowedAsync(context.DnsEndPoint.Host, resolver, policy, token).ConfigureAwait(false);
         SocketException? last = null;
         foreach (var address in addresses)
         {
